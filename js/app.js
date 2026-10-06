@@ -345,40 +345,54 @@ class AppController {
 
         const scrollToBottom = (force = false) => {
             if (!chatContainer) return;
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 150;
+            if (force || isAtBottom) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
         };
 
-        // --- ULTIMATE PWA KEYBOARD FIX (JS) ---
+        // --- ENHANCED UNIVERSAL VIEWPORT FIX ---
+        const appContainer = document.querySelector('.app-container');
+        
         const adjustViewport = () => {
-            if (window.visualViewport) {
-                const vh = window.visualViewport.height;
-                document.body.style.height = vh + 'px';
-                document.documentElement.style.height = vh + 'px';
+            if (window.visualViewport && appContainer) {
+                // কীবোর্ড ওপেন হলে শুধু app-container এর সাইজ ছোট হবে
+                appContainer.style.height = window.visualViewport.height + 'px';
                 
-                // Directly shrink the main container
-                const appContainer = document.querySelector('.app-container');
-                if(appContainer) {
-                    appContainer.style.height = vh + 'px';
-                }
+                // ব্রাউজারকে জোর করে ঠেলে উপরে ওঠা থেকে বিরত রাখা
                 window.scrollTo(0, 0);
+                document.body.scrollTop = 0;
             }
         };
 
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
                 adjustViewport();
-                setTimeout(() => scrollToBottom(true), 50);
+                setTimeout(() => scrollToBottom(true), 100);
+            });
+            
+            // কীবোর্ড ওপেন হওয়ার সময় ব্রাউজার যেন স্ক্রল করতে না পারে
+            window.visualViewport.addEventListener('scroll', () => {
+                window.scrollTo(0, 0);
+            });
+        } else {
+            window.addEventListener('resize', () => {
+                if(appContainer) appContainer.style.height = window.innerHeight + 'px';
+                setTimeout(() => scrollToBottom(true), 100);
             });
         }
         
+        // Page load হওয়ার সাথে সাথে height adjust করে নেবে
         adjustViewport();
-        
+        // ----------------------------------------
+
         messageInput.addEventListener('focus', () => {
             setTimeout(() => {
                 adjustViewport();
                 scrollToBottom(true);
-            }, 300); // Keyboard fully open howar jonno delay
+            }, 300);
         });
+        
         // ----------------------------------------
 
         const settingsOverlay = document.getElementById('settings-overlay');
