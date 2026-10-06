@@ -345,15 +345,27 @@ class AppController {
             }
         };
 
+        // --- MOBILE KEYBOARD FIX (Notun Code Tuku Ekhane Bosaben) ---
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                // Keyboard asle screen er height dynamically adjust korbe
+                document.body.style.height = window.visualViewport.height + 'px';
+                window.scrollTo(0, 0); // Default scroll off korbe
+                scrollToBottom(true);  // Ekdom nicher message e niye jabe
+            });
+        }
+
+        messageInput.addEventListener('focus', () => {
+            // Keyboard animation er jonno chotto delay diye scroll kora
+            setTimeout(() => scrollToBottom(true), 300);
+        });
+        // -------------------------------------------------------------
+
         const settingsOverlay = document.getElementById('settings-overlay');
         const settingsSheet = document.getElementById('settings-sheet');
         document.getElementById('btn-open-settings').addEventListener('click', () => {
             settingsOverlay.classList.add('active');
             settingsSheet.classList.add('active');
-        });
-        settingsOverlay.addEventListener('click', () => {
-            settingsOverlay.classList.remove('active');
-            settingsSheet.classList.remove('active');
         });
 
         document.getElementById('btn-emoji').addEventListener('click', () => messageInput.focus());
