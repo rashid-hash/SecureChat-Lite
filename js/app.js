@@ -10,6 +10,110 @@ import { db, doc, getDoc } from './firebase.js';
 
 PWAModule.init();
 
+// Premium Custom UI Modal System
+const CustomUI = {
+    createModalHTML() {
+        if (document.getElementById('custom-modal-root')) return;
+        const root = document.createElement('div');
+        root.id = 'custom-modal-root';
+        root.className = 'fixed inset-0 z-[9999] hidden items-center justify-center p-4 sm:p-6';
+        root.innerHTML = `
+            <div id="custom-modal-backdrop" class="absolute inset-0 bg-slate-900/50 dark:bg-slate-900/80 backdrop-blur-sm opacity-0 transition-opacity duration-300"></div>
+            <div id="custom-modal-card" class="relative bg-white dark:bg-slate-900 rounded-[24px] w-full max-w-sm shadow-2xl transform scale-95 opacity-0 transition-all duration-300 border border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center text-center">
+                <div id="custom-modal-icon" class="w-16 h-16 rounded-full flex items-center justify-center mb-5 shrink-0 transition-colors"></div>
+                <h3 id="custom-modal-title" class="text-xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight"></h3>
+                <p id="custom-modal-desc" class="text-[14.5px] leading-relaxed text-slate-500 dark:text-slate-400 mb-8"></p>
+                <div id="custom-modal-buttons" class="w-full flex gap-3"></div>
+            </div>
+        `;
+        document.body.appendChild(root);
+    },
+
+    show({ type = 'info', title, message, confirmText = 'OK', cancelText = 'Cancel', isConfirm = false, isDestructive = false }) {
+        return new Promise((resolve) => {
+            this.createModalHTML();
+            const root = document.getElementById('custom-modal-root');
+            const backdrop = document.getElementById('custom-modal-backdrop');
+            const card = document.getElementById('custom-modal-card');
+            const icon = document.getElementById('custom-modal-icon');
+            const titleEl = document.getElementById('custom-modal-title');
+            const descEl = document.getElementById('custom-modal-desc');
+            const btnContainer = document.getElementById('custom-modal-buttons');
+
+            let iconSVG = '';
+            let iconBg = '';
+            let iconColor = '';
+            
+            if (type === 'error' || isDestructive) {
+                iconSVG = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
+                iconBg = 'bg-red-100 dark:bg-red-900/30';
+                iconColor = 'text-red-600 dark:text-red-500';
+            } else if (type === 'success') {
+                iconSVG = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>`;
+                iconBg = 'bg-emerald-100 dark:bg-emerald-900/30';
+                iconColor = 'text-emerald-600 dark:text-emerald-500';
+            } else {
+                iconSVG = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                iconBg = 'bg-blue-100 dark:bg-blue-900/30';
+                iconColor = 'text-blue-600 dark:text-blue-500';
+            }
+
+            icon.className = `w-20 h-20 rounded-full flex items-center justify-center mb-5 ${iconBg} ${iconColor}`;
+            icon.innerHTML = iconSVG;
+            titleEl.textContent = title;
+            descEl.textContent = message;
+
+            btnContainer.innerHTML = '';
+            const btnClass = "flex-1 py-3.5 px-4 rounded-xl text-[14.5px] font-semibold transition-all active:scale-95 tracking-wide";
+            
+            if (isConfirm) {
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = `${btnClass} bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700`;
+                cancelBtn.textContent = cancelText;
+                cancelBtn.onclick = () => close(false);
+                btnContainer.appendChild(cancelBtn);
+            }
+
+            const confirmBtnColor = isDestructive 
+                ? 'bg-red-500 hover:bg-red-600 text-white shadow-md shadow-red-500/20' 
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20';
+
+            const confirmBtn = document.createElement('button');
+            confirmBtn.className = `${btnClass} ${confirmBtnColor}`;
+            confirmBtn.textContent = confirmText;
+            confirmBtn.onclick = () => close(true);
+            btnContainer.appendChild(confirmBtn);
+
+            root.classList.remove('hidden');
+            root.classList.add('flex');
+            
+            // Trigger reflow for animation
+            void root.offsetWidth;
+            
+            backdrop.classList.add('opacity-100');
+            card.classList.remove('scale-95', 'opacity-0');
+            card.classList.add('scale-100', 'opacity-100');
+
+            const close = (result) => {
+                backdrop.classList.remove('opacity-100');
+                card.classList.remove('scale-100', 'opacity-100');
+                card.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    root.classList.remove('flex');
+                    root.classList.add('hidden');
+                    resolve(result);
+                }, 300);
+            };
+        });
+    },
+    alert(title, message, type = 'info') {
+        return this.show({ type, title, message });
+    },
+    confirm(title, message, confirmText = 'Confirm', isDestructive = false) {
+        return this.show({ type: isDestructive ? 'error' : 'info', title, message, confirmText, isConfirm: true, isDestructive });
+    }
+};
+
 class AppController {
     constructor() {
         this.path = window.location.pathname;
@@ -66,7 +170,6 @@ class AppController {
             try {
                 await AuthModule.authenticateAnonymousUser();
 
-                // নতুন সেটিংস অবজেক্ট (messageExpiryMins যোগ করা হয়েছে)
                 const settings = {
                     roomType: document.querySelector('input[name="roomType"]:checked').value,
                     maxParticipants: document.getElementById('select-max-users').value,
@@ -86,7 +189,7 @@ class AppController {
                 document.getElementById('room-link').value = linkStr;
 
             } catch (err) {
-                alert("Failed to create room. Please check your internet connection.");
+                await CustomUI.alert("Creation Failed", "Failed to create room. Please check your internet connection.", "error");
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = "Generate Secure Room";
             }
@@ -121,7 +224,7 @@ class AppController {
                 btn.innerHTML = "🔒 Room Locked";
                 btn.classList.add('text-amber-600', 'border-amber-200', 'bg-amber-50');
             } catch (err) {
-                alert("Could not lock room.");
+                await CustomUI.alert("Lock Failed", "Could not lock room.", "error");
                 btn.disabled = false;
             }
         });
@@ -225,7 +328,7 @@ class AppController {
         let nickname = sessionStorage.getItem('sc_nickname') || "Anonymous";
         let liveDraftEnabled = false;
         let messageExpiryMins = 10;
-        let isHost = false; // বর্তমান ইউজার হোস্ট কি না তা ট্র্যাক করার জন্য
+        let isHost = false;
 
         const chatContainer = document.getElementById('chat-container');
         const emptyState = document.getElementById('empty-state');
@@ -268,20 +371,16 @@ class AppController {
             connDot.classList.remove('animate-pulse');
             connText.textContent = "Secure connection";
             
-            // রুম সেটিংস ফেচ করা
             const roomSnap = await getDoc(doc(db, "rooms", roomId));
             if (roomSnap.exists()) {
                 const roomData = roomSnap.data();
                 document.getElementById('ui-participant-count').textContent = `👥 ${roomData.participantCount}/${roomData.maxParticipants}`;
                 
-                // হোস্ট ভেরিফিকেশন
                 isHost = roomData.ownerId === currentUser.uid;
 
-                // কাস্টম এক্সপায়ারি টাইম UI-তে আপডেট করা
                 messageExpiryMins = roomData.settings?.messageExpiryMins || 10;
                 document.getElementById('ui-expiry-tag').textContent = `E2E ENCRYPTED • ${messageExpiryMins} MIN EXPIRY`;
                 
-                // Live Draft Warning শুধুমাত্র হোস্টকে দেখানো হবে
                 liveDraftEnabled = roomData.settings?.liveDraftEnabled === true;
                 if (liveDraftEnabled && isHost) {
                     document.getElementById('live-draft-warning').classList.remove('hidden');
@@ -313,7 +412,6 @@ class AppController {
                 }
             );
 
-            // Typing Module-এ isHost প্যারামিটার পাঠানো হলো
             const unsubscribeTyping = TypingModule.listenForTyping(roomId, typingContainer, isHost);
 
             messageInput.addEventListener('input', (e) => {
@@ -335,7 +433,6 @@ class AppController {
                 if (!textToSubmit || textToSubmit.length > 2000) return;
                 try {
                     if (overrideId) document.getElementById(`msg-${overrideId}`)?.remove();
-                    // messageExpiryMins ভ্যালুটি মেসেজ মডিউলে পাঠানো হলো
                     await MessagesModule.sendMessage(roomId, textToSubmit, nickname, messageExpiryMins);
                     TypingModule.clearTypingState(roomId);
                 } catch (failedId) {
@@ -352,15 +449,17 @@ class AppController {
                 handleSend(text);
             });
 
-            document.getElementById('btn-copy-link').addEventListener('click', () => {
+            document.getElementById('btn-copy-link').addEventListener('click', async () => {
                 const link = `${window.location.origin}/join.html?roomId=${roomId}#key=${keyFragment}`;
                 navigator.clipboard.writeText(link);
-                alert("Invite link copied to clipboard!");
+                await CustomUI.alert("Link Copied", "Invite link has been copied to clipboard!", "success");
             });
 
             document.getElementById('btn-lock').addEventListener('click', async () => {
                 await RoomModule.lockRoom(roomId);
-                alert("Room is now locked.");
+                settingsOverlay.classList.remove('active');
+                settingsSheet.classList.remove('active');
+                await CustomUI.alert("Room Locked", "This room is now locked. No one else can join.", "success");
             });
 
             const cleanupAndLeave = async () => {
@@ -373,7 +472,18 @@ class AppController {
             };
 
             document.getElementById('btn-destroy').addEventListener('click', async () => {
-                if(confirm("Leave this room permanently?")) {
+                settingsOverlay.classList.remove('active');
+                settingsSheet.classList.remove('active');
+                
+                // Custom Confirm Popup
+                const confirmed = await CustomUI.confirm(
+                    "Leave Room?", 
+                    "Are you sure you want to leave this room permanently? You cannot rejoin.", 
+                    "Leave & Destroy", 
+                    true // isDestructive = true (Red button)
+                );
+                
+                if(confirmed) {
                     await cleanupAndLeave();
                     window.location.href = 'index.html';
                 }
@@ -382,7 +492,7 @@ class AppController {
             window.addEventListener('beforeunload', () => TypingModule.clearTypingState(roomId));
 
         } catch (error) {
-            alert("Security Error: " + error.message);
+            await CustomUI.alert("Security Error", error.message, "error");
         }
     }
 }
