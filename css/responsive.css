@@ -1,0 +1,6 @@
+/* Tailwind handles 95% of responsiveness. Use this for specific edge cases. */
+@media (max-width: 640px) {
+    #message-input {
+        font-size: 16px; /* Prevents iOS Safari zoom on focus */
+    }
+}

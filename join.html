@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Join Room - SecureChat</title>
+    <meta name="theme-color" content="#4f46e5">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
+    <div class="app-container overflow-y-auto custom-scrollbar">
+        
+        <!-- Header (Simple Navigation) -->
+        <header class="h-14 flex items-center px-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20">
+            <a href="index.html" class="p-2 -ml-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            </a>
+            <span class="font-semibold ml-2 text-sm">Join Room</span>
+        </header>
+
+        <main class="flex-grow flex flex-col items-center justify-center p-6">
+            
+            <!-- STATE 1: Loading Skeleton -->
+            <div id="loading-container" class="w-full max-w-md text-center fade-in">
+                <div class="animate-pulse flex flex-col items-center space-y-5">
+                    <div class="h-16 w-16 bg-slate-200 dark:bg-slate-800 rounded-2xl transform rotate-3"></div>
+                    <div class="space-y-3 w-full flex flex-col items-center mt-4">
+                        <div class="h-5 w-40 bg-slate-200 dark:bg-slate-800 rounded-md"></div>
+                        <div class="h-3 w-24 bg-slate-100 dark:bg-slate-800/60 rounded-md"></div>
+                    </div>
+                    <div class="w-full h-14 bg-slate-100 dark:bg-slate-800/50 rounded-xl mt-6"></div>
+                </div>
+            </div>
+
+            <!-- STATE 2: Elegant Error State -->
+            <div id="error-container" class="hidden w-full max-w-md text-center slide-up">
+                <div class="mx-auto w-16 h-16 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm transform -rotate-3">
+                    <span id="error-icon" class="text-3xl">🚫</span>
+                </div>
+                <h2 id="error-title" class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Access Denied</h2>
+                <p id="error-message" class="text-sm text-slate-500 mt-2 mb-8 px-4">The secure room is unavailable or the link is invalid.</p>
+                <a href="index.html" class="inline-flex justify-center items-center w-full py-4 px-4 rounded-xl text-sm font-semibold text-white bg-slate-900 dark:bg-white dark:text-slate-900 hover:opacity-90 active:scale-95 transition-all shadow-md tracking-wide">
+                    Return to Home
+                </a>
+            </div>
+
+            <!-- STATE 3: Join Form -->
+            <div id="join-form-container" class="hidden w-full max-w-md space-y-8 slide-up mt-[-2rem]">
+                <div class="text-center">
+                    <div class="mx-auto w-16 h-16 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl flex items-center justify-center mb-5 shadow-sm transform rotate-3">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    </div>
+                    <h2 class="text-2xl font-bold tracking-tight">Who are you?</h2>
+                    <p class="text-sm text-slate-500 mt-1.5">Enter a temporary nickname. <br>No account required.</p>
+                </div>
+                
+                <form id="form-join-room" class="space-y-5">
+                    <div class="relative">
+                        <input type="text" id="input-nickname" placeholder="e.g., Alice" required minlength="2" maxlength="15" autocomplete="off" class="appearance-none block w-full px-4 py-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-center text-lg font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm placeholder-slate-400">
+                    </div>
+                    
+                    <button type="submit" id="btn-confirm-join" class="w-full flex justify-center items-center py-4 px-4 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all shadow-md disabled:opacity-50 tracking-wide">
+                        Join Securely
+                    </button>
+                </form>
+
+                <div class="text-center mt-6">
+                    <p class="text-[11px] text-slate-400 font-medium tracking-wider uppercase flex justify-center items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        End-to-End Encrypted
+                    </p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

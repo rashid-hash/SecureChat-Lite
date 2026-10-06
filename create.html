@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Create Room - SecureChat</title>
+    <meta name="theme-color" content="#4f46e5">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
+    <div class="app-container overflow-y-auto custom-scrollbar">
+        
+        <!-- Header (Simple Back Navigation) -->
+        <header class="h-14 flex items-center px-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20">
+            <a href="index.html" class="p-2 -ml-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            </a>
+            <span class="font-semibold ml-2 text-sm">New Room</span>
+        </header>
+
+        <main class="flex-grow flex flex-col p-6 fade-in pb-12">
+            
+            <!-- STATE 1: Create Form -->
+            <div id="create-form-container" class="w-full max-w-md mx-auto space-y-8">
+                <div class="text-center mt-2">
+                    <div class="mx-auto w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-4 shadow-sm transform -rotate-3">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    </div>
+                    <h2 class="text-2xl font-semibold tracking-tight">Configure Chat</h2>
+                    <p class="text-sm text-slate-500 mt-1.5">Set up your secure ephemeral space.</p>
+                </div>
+                
+                <form id="form-create-room" class="space-y-6">
+                    <!-- Room Type -->
+                    <div class="space-y-3">
+                        <label class="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Room Type</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="roomType" value="1on1" class="peer sr-only" checked>
+                                <div class="text-center px-4 py-3.5 border border-slate-200 dark:border-slate-700 rounded-xl peer-checked:bg-emerald-50 peer-checked:border-emerald-500 peer-checked:text-emerald-700 dark:peer-checked:bg-emerald-900/20 dark:peer-checked:border-emerald-500/50 dark:peer-checked:text-emerald-400 transition-all text-sm font-medium shadow-sm peer-checked:shadow-none">One-to-One</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="roomType" value="group" class="peer sr-only">
+                                <div class="text-center px-4 py-3.5 border border-slate-200 dark:border-slate-700 rounded-xl peer-checked:bg-emerald-50 peer-checked:border-emerald-500 peer-checked:text-emerald-700 dark:peer-checked:bg-emerald-900/20 dark:peer-checked:border-emerald-500/50 dark:peer-checked:text-emerald-400 transition-all text-sm font-medium shadow-sm peer-checked:shadow-none">Group</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Participants limit (Hidden by default for 1on1) -->
+                    <div id="group-settings" class="hidden space-y-3 transition-all slide-up">
+                        <label class="block text-[13px] font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Max Participants</label>
+                        <select id="select-max-users" class="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-colors appearance-none text-slate-900 dark:text-white shadow-sm">
+                            <option value="2">2 People</option>
+                            <option value="3">3 People</option>
+                            <option value="4">4 People</option>
+                            <option value="5" selected>5 People (Max)</option>
+                        </select>
+                    </div>
+
+                    <!-- Settings Toggles -->
+                    <div class="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-5 space-y-5 border border-slate-100 dark:border-slate-800 shadow-sm">
+                        
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-sm font-medium block">Message Expiration</span>
+                                <span class="text-[11px] text-slate-500">Fixed for maximum security</span>
+                            </div>
+                            <span class="text-[11px] font-bold bg-slate-200 dark:bg-slate-700 px-2.5 py-1 rounded text-slate-700 dark:text-slate-300 uppercase tracking-wide">10 Mins</span>
+                        </div>
+
+                        <hr class="border-slate-200 dark:border-slate-700/50">
+
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-sm font-medium block">Typing Indicator</span>
+                                <span class="text-[11px] text-slate-500">Show when someone is typing</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggle-typing" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 shadow-sm"></div>
+                            </label>
+                        </div>
+                        
+                        <hr class="border-slate-200 dark:border-slate-700/50">
+
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-sm font-medium block">Live Draft Mode</span>
+                                <span class="text-[11px] text-amber-600 dark:text-amber-500 font-medium">Others see text before sending</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggle-draft" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500 shadow-sm"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit" id="btn-submit-create" class="w-full flex justify-center items-center py-4 px-4 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all shadow-md disabled:opacity-50 tracking-wide">
+                            Generate Secure Room
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- STATE 2: Success & Share -->
+            <div id="create-success-container" class="hidden w-full max-w-md mx-auto text-center slide-up mt-8">
+                <div class="mx-auto w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-6 shadow-sm border-4 border-white dark:border-slate-900">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                
+                <h2 class="text-2xl font-bold tracking-tight">Room is Ready</h2>
+                <p class="text-sm text-slate-500 mt-2">Share this encrypted link to invite others.</p>
+                
+                <div class="mt-8 flex items-center space-x-2 bg-slate-50 dark:bg-slate-800/80 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/50 shadow-inner">
+                    <input type="text" id="room-link" readonly class="flex-1 bg-transparent border-none focus:ring-0 text-[13px] text-slate-700 dark:text-slate-300 font-mono truncate outline-none select-all">
+                </div>
+
+                <div class="mt-8 space-y-3.5">
+                    <button id="btn-copy" class="w-full py-4 px-4 rounded-xl text-sm font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 active:scale-95 transition-all shadow-sm">
+                        Copy Invite Link
+                    </button>
+                    
+                    <button id="btn-open-chat" class="w-full py-4 px-4 rounded-xl text-sm font-semibold text-white bg-slate-900 dark:bg-white dark:text-slate-900 hover:opacity-90 active:scale-95 transition-all shadow-md tracking-wide">
+                        Enter Chat Now
+                    </button>
+                    
+                    <button id="btn-lock-early" class="w-full flex justify-center items-center gap-2 py-4 px-4 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all mt-6">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        Lock Room Early
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>SecureChat Lite</title>
+    
+    <!-- PWA & Mobile Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
+    <div class="app-container">
+        <main class="flex-grow flex flex-col items-center justify-center p-8 fade-in">
+            <div class="w-full space-y-10 text-center">
+                
+                <!-- Minimal Premium Logo -->
+                <div class="mx-auto w-16 h-16 bg-slate-900 dark:bg-white rounded-2xl flex items-center justify-center shadow-lg transform rotate-3">
+                    <svg class="w-8 h-8 text-white dark:text-slate-900" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+                </div>
+                
+                <div>
+                    <h1 class="text-3xl font-semibold tracking-tight">SecureChat</h1>
+                    <p class="mt-2 text-slate-500 dark:text-slate-400 text-sm">End-to-End Encrypted. Ephemeral.</p>
+                </div>
+                
+                <div class="space-y-4 pt-4 w-full max-w-[280px] mx-auto">
+                    <!-- Create Room Button -->
+                    <button id="btn-create" class="w-full py-3.5 px-4 rounded-xl text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all shadow-md">
+                        Create Private Room
+                    </button>
+                    
+                    <!-- PWA Install Button (Hidden by default until ready) -->
+                    <button id="btn-install-pwa" class="hidden w-full py-3.5 px-4 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all">
+                        📱 Install Secure App
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

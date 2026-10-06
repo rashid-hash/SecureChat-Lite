@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Chat - SecureChat</title>
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
+    
+    <div class="app-container overflow-hidden flex flex-col">
+        
+        <!-- Offline Banner (PWA) -->
+        <div id="offline-banner" class="hidden bg-red-500 text-white text-[11px] font-bold text-center py-1.5 w-full z-50 tracking-wide uppercase shadow-sm">
+            Waiting for network...
+        </div>
+
+        <!-- Live Draft Warning (Typing Module) -->
+        <div id="live-draft-warning" class="hidden bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500 text-[11px] font-bold text-center py-1.5 shadow-sm z-40 relative tracking-wide uppercase">
+            ⚠️ Live Draft is ON. Others can see your text.
+        </div>
+
+        <!-- Premium Header -->
+        <header class="h-16 flex items-center justify-between px-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 z-30 shrink-0">
+            <div class="flex items-center space-x-3">
+                <div class="flex flex-col">
+                    <span class="font-semibold text-sm flex items-center gap-1.5">
+                        <span>🔐 Private Chat</span>
+                        <span id="ui-room-id" class="text-xs text-slate-400 font-mono hidden"></span>
+                    </span>
+                    <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                        <span id="ui-participant-count">👥 1/5</span>
+                        <span>•</span>
+                        <span class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                            <span id="ui-connection-dot" class="w-1.5 h-1.5 rounded-full bg-yellow-500 shadow-sm animate-pulse"></span>
+                            <span id="ui-connection-text">Connecting...</span>
+                        </span>
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Settings Button opens Bottom Sheet -->
+            <button id="btn-open-settings" class="p-2 -mr-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all" aria-label="Settings">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
+            </button>
+        </header>
+
+        <!-- Main Chat Area -->
+        <main id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar relative bg-slate-50 dark:bg-[#0b1121]">
+            
+            <!-- Information Tag -->
+            <div class="text-center my-4">
+                <span class="inline-block bg-white dark:bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700/50 text-[10px] font-medium text-slate-500 shadow-sm uppercase tracking-wider">
+                    E2E Encrypted • 10 Min Expiry
+                </span>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center pointer-events-none opacity-60">
+                <span class="text-4xl mb-3 transform -rotate-6">👻</span>
+                <p class="text-sm font-medium text-slate-700 dark:text-slate-300">No messages yet.</p>
+                <p class="text-[12px] text-slate-500 mt-1">Send a secure message to start.</p>
+            </div>
+
+            <!-- Messages will be injected here -->
+        </main>
+
+        <!-- Typing Indicator Container -->
+        <div id="typing-indicator-container" class="px-4 py-1.5 min-h-[30px] bg-slate-50 dark:bg-[#0b1121] shrink-0 border-t border-transparent z-10 flex flex-col justify-end"></div>
+
+        <!-- Premium Footer -->
+        <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 pb-[env(safe-area-inset-bottom)] z-20">
+            <form id="chat-form" class="flex items-end gap-2 px-3 py-3">
+                <div class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-end relative border border-transparent focus-within:border-emerald-500/50 transition-colors shadow-inner">
+                    
+                    <!-- Emoji Button (Triggers native keyboard focus on mobile) -->
+                    <button type="button" id="btn-emoji" class="p-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 shrink-0 active:scale-95 transition-transform">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </button>
+                    
+                    <textarea id="message-input" rows="1" class="w-full bg-transparent resize-none border-none focus:ring-0 py-4 pr-4 text-[15px] max-h-28 custom-scrollbar text-slate-900 dark:text-white placeholder-slate-400" placeholder="Message..." required></textarea>
+                </div>
+                
+                <!-- Send Button -->
+                <button type="submit" id="btn-send" class="p-4 rounded-full bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-all shrink-0 mb-0.5 active:scale-95 shadow-md">
+                    <svg class="w-5 h-5 transform rotate-90 translate-x-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
+                </button>
+            </form>
+        </footer>
+
+        <!-- Bottom Sheet (Room Settings) -->
+        <div id="settings-overlay" class="bottom-sheet-overlay"></div>
+        <div id="settings-sheet" class="bottom-sheet bg-white dark:bg-slate-900 pb-[env(safe-area-inset-bottom)] border-t border-slate-200 dark:border-slate-800 shadow-2xl">
+            <div class="flex justify-center pt-3 pb-2">
+                <div class="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+            </div>
+            <div class="p-6 space-y-4">
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Room Settings</h3>
+                
+                <button id="btn-copy-link" class="w-full flex items-center justify-between py-3.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 active:scale-95 transition-transform">
+                    <span class="text-sm font-medium">Copy Invite Link</span>
+                    <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                </button>
+
+                <button id="btn-lock" class="w-full flex items-center justify-between py-3.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 active:scale-95 transition-transform text-amber-600 dark:text-amber-500">
+                    <span class="text-sm font-medium">Lock Room</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </button>
+
+                <button id="btn-destroy" class="w-full flex items-center justify-between py-3.5 px-4 rounded-xl bg-red-50 dark:bg-red-900/20 active:scale-95 transition-transform text-red-600 dark:text-red-400 mt-2">
+                    <span class="text-sm font-medium">Leave & Destroy</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                </button>
+            </div>
+        </div>
+        
+    </div>
+    
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
