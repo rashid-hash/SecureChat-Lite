@@ -323,7 +323,10 @@ class AppController {
         const roomId = this.urlParams.get('roomId');
         const keyFragment = sessionStorage.getItem(`sc_key_${roomId}`);
         
-        if (!roomId || !keyFragment) window.location.href = 'index.html';
+        if (!roomId || !keyFragment) {
+            window.location.href = 'index.html';
+            return;
+        }
 
         let nickname = sessionStorage.getItem('sc_nickname') || "Anonymous";
         let liveDraftEnabled = false;
@@ -341,19 +344,37 @@ class AppController {
         let messageCount = 0;
 
         const scrollToBottom = (force = false) => {
+            if (!chatContainer) return;
             const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 150;
             if (force || isAtBottom) {
                 chatContainer.scrollTop = chatContainer.scrollHeight;
             }
         };
 
+        // --- ENHANCED UNIVERSAL VIEWPORT FIX ---
+        const adjustViewport = () => {
+            // Android, iOS, PWA shobkicchu te perfect vabe height adjust korar master logic
+            const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            document.body.style.height = vh + 'px';
+            document.documentElement.style.height = vh + 'px'; 
+            window.scrollTo(0, 0);
+        };
+
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
-                document.body.style.height = window.visualViewport.height + 'px';
-                window.scrollTo(0, 0); 
-                scrollToBottom(true);  
+                adjustViewport();
+                setTimeout(() => scrollToBottom(true), 100);
+            });
+        } else {
+            window.addEventListener('resize', () => {
+                adjustViewport();
+                setTimeout(() => scrollToBottom(true), 100);
             });
         }
+        
+        // Page load howar shathe shathei height adjust kore nebe
+        adjustViewport();
+        // ----------------------------------------
 
         messageInput.addEventListener('focus', () => {
             setTimeout(() => scrollToBottom(true), 300);
@@ -361,16 +382,21 @@ class AppController {
 
         const settingsOverlay = document.getElementById('settings-overlay');
         const settingsSheet = document.getElementById('settings-sheet');
+        
         document.getElementById('btn-open-settings').addEventListener('click', () => {
             settingsOverlay.classList.add('active');
             settingsSheet.classList.add('active');
         });
+        
         settingsOverlay.addEventListener('click', () => {
             settingsOverlay.classList.remove('active');
             settingsSheet.classList.remove('active');
         });
 
-        document.getElementById('btn-emoji').addEventListener('click', () => messageInput.focus());
+        const btnEmoji = document.getElementById('btn-emoji');
+        if (btnEmoji) {
+            btnEmoji.addEventListener('click', () => messageInput.focus());
+        }
 
         // Burn Mode Toggle Logic
         if (btnBurn) {
@@ -397,23 +423,29 @@ class AppController {
 
             const connDot = document.getElementById('ui-connection-dot');
             const connText = document.getElementById('ui-connection-text');
-            connDot.classList.replace('bg-yellow-500', 'bg-emerald-500');
-            connDot.classList.remove('animate-pulse');
-            connText.textContent = "Secure connection";
+            if (connDot && connText) {
+                connDot.classList.replace('bg-yellow-500', 'bg-emerald-500');
+                connDot.classList.remove('animate-pulse');
+                connText.textContent = "Secure connection";
+            }
             
             const roomSnap = await getDoc(doc(db, "rooms", roomId));
             if (roomSnap.exists()) {
                 const roomData = roomSnap.data();
-                document.getElementById('ui-participant-count').textContent = `👥 ${roomData.participantCount}/${roomData.maxParticipants}`;
+                
+                const countEl = document.getElementById('ui-participant-count');
+                if (countEl) countEl.textContent = `👥 ${roomData.participantCount}/${roomData.maxParticipants}`;
                 
                 isHost = roomData.ownerId === currentUser.uid;
 
                 messageExpiryMins = roomData.settings?.messageExpiryMins || 10;
-                document.getElementById('ui-expiry-tag').textContent = `E2E ENCRYPTED • ${messageExpiryMins} MIN EXPIRY`;
+                const expiryTag = document.getElementById('ui-expiry-tag');
+                if (expiryTag) expiryTag.textContent = `E2E ENCRYPTED • ${messageExpiryMins} MIN EXPIRY`;
                 
                 liveDraftEnabled = roomData.settings?.liveDraftEnabled === true;
-                if (liveDraftEnabled && isHost) {
-                    document.getElementById('live-draft-warning').classList.remove('hidden');
+                const draftWarning = document.getElementById('live-draft-warning');
+                if (liveDraftEnabled && isHost && draftWarning) {
+                    draftWarning.classList.remove('hidden');
                 }
             }
 
@@ -426,7 +458,7 @@ class AppController {
                     MessagesModule.renderMessage(chatContainer, id, data, isPending, expiresMs);
                     scrollToBottom(data.senderId === AuthModule.getCurrentUser().uid);
                 },
-                (id, data, isPending, expiresMs) => { // expiresMs রিসিভ করা হচ্ছে
+                (id, data, isPending, expiresMs) => { 
                     MessagesModule.updateMessageState(id, data, isPending, expiresMs);
                 },
                 (id) => {
@@ -464,12 +496,10 @@ class AppController {
                 try {
                     if (overrideId) document.getElementById(`msg-${overrideId}`)?.remove();
                     
-                    // isBurnMode ডেটাটি পাঠানো হলো
                     await MessagesModule.sendMessage(roomId, textToSubmit, nickname, messageExpiryMins, isBurnMode);
                     TypingModule.clearTypingState(roomId);
                     
-                    // মেসেজ সেন্ড করার পর Burn Mode অফ করে দেওয়া
-                    if(isBurnMode) btnBurn.click(); 
+                    if(isBurnMode && btnBurn) btnBurn.click(); 
                 } catch (failedId) {
                     MessagesModule.markMessageFailed(failedId.message, textToSubmit, nickname, handleSend);
                 }
@@ -484,44 +514,53 @@ class AppController {
                 handleSend(text);
             });
 
-            document.getElementById('btn-copy-link').addEventListener('click', async () => {
-                const link = `${window.location.origin}/join.html?roomId=${roomId}#key=${keyFragment}`;
-                navigator.clipboard.writeText(link);
-                await CustomUI.alert("Link Copied", "Invite link has been copied to clipboard!", "success");
-            });
+            const btnCopyLink = document.getElementById('btn-copy-link');
+            if (btnCopyLink) {
+                btnCopyLink.addEventListener('click', async () => {
+                    const link = `${window.location.origin}/join.html?roomId=${roomId}#key=${keyFragment}`;
+                    navigator.clipboard.writeText(link);
+                    await CustomUI.alert("Link Copied", "Invite link has been copied to clipboard!", "success");
+                });
+            }
 
-            document.getElementById('btn-lock').addEventListener('click', async () => {
-                await RoomModule.lockRoom(roomId);
-                settingsOverlay.classList.remove('active');
-                settingsSheet.classList.remove('active');
-                await CustomUI.alert("Room Locked", "This room is now locked. No one else can join.", "success");
-            });
+            const btnLock = document.getElementById('btn-lock');
+            if (btnLock) {
+                btnLock.addEventListener('click', async () => {
+                    await RoomModule.lockRoom(roomId);
+                    settingsOverlay.classList.remove('active');
+                    settingsSheet.classList.remove('active');
+                    await CustomUI.alert("Room Locked", "This room is now locked. No one else can join.", "success");
+                });
+            }
 
             const cleanupAndLeave = async () => {
                 await TypingModule.clearTypingState(roomId);
                 unsubscribeTyping();
                 MessagesModule.stopListening();
-                CleanupModule.startSweeper();
+                CleanupModule.stopSweeper();
                 sessionStorage.removeItem('sc_nickname');
                 sessionStorage.removeItem(`sc_key_${roomId}`);
             };
 
-            document.getElementById('btn-destroy').addEventListener('click', async () => {
-                settingsOverlay.classList.remove('active');
-                settingsSheet.classList.remove('active');
-                
-                const confirmed = await CustomUI.confirm(
-                    "Leave Room?", 
-                    "Are you sure you want to leave this room permanently? You cannot rejoin.", 
-                    "Leave & Destroy", 
-                    true 
-                );
-                
-                if(confirmed) {
-                    await cleanupAndLeave();
-                    window.location.href = 'index.html';
-                }
-            });
+            const btnDestroy = document.getElementById('btn-destroy');
+            if (btnDestroy) {
+                btnDestroy.addEventListener('click', async () => {
+                    settingsOverlay.classList.remove('active');
+                    settingsSheet.classList.remove('active');
+                    
+                    const confirmed = await CustomUI.confirm(
+                        "Leave Room?", 
+                        "Are you sure you want to leave this room permanently? You cannot rejoin.", 
+                        "Leave & Destroy", 
+                        true 
+                    );
+                    
+                    if(confirmed) {
+                        await cleanupAndLeave();
+                        window.location.href = 'index.html';
+                    }
+                });
+            }
 
             window.addEventListener('beforeunload', () => TypingModule.clearTypingState(roomId));
 
