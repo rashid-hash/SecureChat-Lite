@@ -7,6 +7,7 @@ import { MessagesModule } from './messages.js';
 import { TypingModule } from './typing.js';
 import { CleanupModule } from './cleanup.js';
 import { db, doc, getDoc } from './firebase.js';
+import { SoundModule } from './sound.js';
 
 PWAModule.init();
 
@@ -430,7 +431,9 @@ class AppController {
         }
 
         try {
+            SoundModule.init();
             const currentUser = await AuthModule.authenticateAnonymousUser();
+            
 
             // --- ANTI-SCREENSHOT WATERMARK (NEW) ---
             const applyWatermark = (userName) => {
@@ -486,6 +489,11 @@ class AppController {
                     if(emptyState) emptyState.style.display = 'none';
                     messageCount++;
                     MessagesModule.renderMessage(chatContainer, id, data, isPending, expiresMs);
+                    if (data.senderId !== currentUser.uid && !isPending) {
+                        SoundModule.playPopSound();
+                        SoundModule.triggerHaptic(40);
+                    }
+
                     scrollToBottom(data.senderId === AuthModule.getCurrentUser().uid);
                 },
                 (id, data, isPending, expiresMs) => { 
@@ -528,6 +536,9 @@ class AppController {
                     
                     await MessagesModule.sendMessage(roomId, textToSubmit, nickname, messageExpiryMins, isBurnMode);
                     TypingModule.clearTypingState(roomId);
+
+                    SoundModule.playPopSound();
+                    SoundModule.triggerHaptic(20);
                     
                     if(isBurnMode && btnBurn) btnBurn.click(); 
                 } catch (failedId) {
