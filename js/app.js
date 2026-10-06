@@ -329,12 +329,14 @@ class AppController {
         let liveDraftEnabled = false;
         let messageExpiryMins = 10;
         let isHost = false;
+        let isBurnMode = false; // Burn Mode State
 
         const chatContainer = document.getElementById('chat-container');
         const emptyState = document.getElementById('empty-state');
         const typingContainer = document.getElementById('typing-indicator-container');
         const messageInput = document.getElementById('message-input');
         const chatForm = document.getElementById('chat-form');
+        const btnBurn = document.getElementById('btn-burn-toggle');
         
         let messageCount = 0;
 
@@ -345,21 +347,17 @@ class AppController {
             }
         };
 
-        // --- MOBILE KEYBOARD FIX (Notun Code Tuku Ekhane Bosaben) ---
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
-                // Keyboard asle screen er height dynamically adjust korbe
                 document.body.style.height = window.visualViewport.height + 'px';
-                window.scrollTo(0, 0); // Default scroll off korbe
-                scrollToBottom(true);  // Ekdom nicher message e niye jabe
+                window.scrollTo(0, 0); 
+                scrollToBottom(true);  
             });
         }
 
         messageInput.addEventListener('focus', () => {
-            // Keyboard animation er jonno chotto delay diye scroll kora
             setTimeout(() => scrollToBottom(true), 300);
         });
-        // -------------------------------------------------------------
 
         const settingsOverlay = document.getElementById('settings-overlay');
         const settingsSheet = document.getElementById('settings-sheet');
@@ -367,8 +365,28 @@ class AppController {
             settingsOverlay.classList.add('active');
             settingsSheet.classList.add('active');
         });
+        settingsOverlay.addEventListener('click', () => {
+            settingsOverlay.classList.remove('active');
+            settingsSheet.classList.remove('active');
+        });
 
         document.getElementById('btn-emoji').addEventListener('click', () => messageInput.focus());
+
+        // Burn Mode Toggle Logic
+        if (btnBurn) {
+            btnBurn.addEventListener('click', () => {
+                isBurnMode = !isBurnMode;
+                if (isBurnMode) {
+                    btnBurn.classList.add('text-orange-500', 'bg-orange-100', 'dark:bg-orange-900/40');
+                    btnBurn.classList.remove('text-slate-400');
+                    CustomUI.alert("Burn Mode ON 🔥", "This message will self-destruct 5 seconds after they read it.", "info");
+                } else {
+                    btnBurn.classList.remove('text-orange-500', 'bg-orange-100', 'dark:bg-orange-900/40');
+                    btnBurn.classList.add('text-slate-400');
+                }
+                messageInput.focus();
+            });
+        }
 
         try {
             const currentUser = await AuthModule.authenticateAnonymousUser();
@@ -408,8 +426,8 @@ class AppController {
                     MessagesModule.renderMessage(chatContainer, id, data, isPending, expiresMs);
                     scrollToBottom(data.senderId === AuthModule.getCurrentUser().uid);
                 },
-                (id, data, isPending) => {
-                    MessagesModule.updateMessageState(id, data, isPending);
+                (id, data, isPending, expiresMs) => { // expiresMs রিসিভ করা হচ্ছে
+                    MessagesModule.updateMessageState(id, data, isPending, expiresMs);
                 },
                 (id) => {
                     const msgEl = document.getElementById(`msg-${id}`);
@@ -445,8 +463,13 @@ class AppController {
                 if (!textToSubmit || textToSubmit.length > 2000) return;
                 try {
                     if (overrideId) document.getElementById(`msg-${overrideId}`)?.remove();
-                    await MessagesModule.sendMessage(roomId, textToSubmit, nickname, messageExpiryMins);
+                    
+                    // isBurnMode ডেটাটি পাঠানো হলো
+                    await MessagesModule.sendMessage(roomId, textToSubmit, nickname, messageExpiryMins, isBurnMode);
                     TypingModule.clearTypingState(roomId);
+                    
+                    // মেসেজ সেন্ড করার পর Burn Mode অফ করে দেওয়া
+                    if(isBurnMode) btnBurn.click(); 
                 } catch (failedId) {
                     MessagesModule.markMessageFailed(failedId.message, textToSubmit, nickname, handleSend);
                 }
@@ -478,7 +501,7 @@ class AppController {
                 await TypingModule.clearTypingState(roomId);
                 unsubscribeTyping();
                 MessagesModule.stopListening();
-                CleanupModule.stopSweeper();
+                CleanupModule.startSweeper();
                 sessionStorage.removeItem('sc_nickname');
                 sessionStorage.removeItem(`sc_key_${roomId}`);
             };
@@ -487,12 +510,11 @@ class AppController {
                 settingsOverlay.classList.remove('active');
                 settingsSheet.classList.remove('active');
                 
-                // Custom Confirm Popup
                 const confirmed = await CustomUI.confirm(
                     "Leave Room?", 
                     "Are you sure you want to leave this room permanently? You cannot rejoin.", 
                     "Leave & Destroy", 
-                    true // isDestructive = true (Red button)
+                    true 
                 );
                 
                 if(confirmed) {
