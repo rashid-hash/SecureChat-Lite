@@ -345,40 +345,41 @@ class AppController {
 
         const scrollToBottom = (force = false) => {
             if (!chatContainer) return;
-            const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 150;
-            if (force || isAtBottom) {
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            }
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         };
 
-        // --- ENHANCED UNIVERSAL VIEWPORT FIX ---
+        // --- ULTIMATE PWA KEYBOARD FIX (JS) ---
         const adjustViewport = () => {
-            // Android, iOS, PWA shobkicchu te perfect vabe height adjust korar master logic
-            const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-            document.body.style.height = vh + 'px';
-            document.documentElement.style.height = vh + 'px'; 
-            window.scrollTo(0, 0);
+            if (window.visualViewport) {
+                const vh = window.visualViewport.height;
+                document.body.style.height = vh + 'px';
+                document.documentElement.style.height = vh + 'px';
+                
+                // Directly shrink the main container
+                const appContainer = document.querySelector('.app-container');
+                if(appContainer) {
+                    appContainer.style.height = vh + 'px';
+                }
+                window.scrollTo(0, 0);
+            }
         };
 
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
                 adjustViewport();
-                setTimeout(() => scrollToBottom(true), 100);
-            });
-        } else {
-            window.addEventListener('resize', () => {
-                adjustViewport();
-                setTimeout(() => scrollToBottom(true), 100);
+                setTimeout(() => scrollToBottom(true), 50);
             });
         }
         
-        // Page load howar shathe shathei height adjust kore nebe
         adjustViewport();
-        // ----------------------------------------
-
+        
         messageInput.addEventListener('focus', () => {
-            setTimeout(() => scrollToBottom(true), 300);
+            setTimeout(() => {
+                adjustViewport();
+                scrollToBottom(true);
+            }, 300); // Keyboard fully open howar jonno delay
         });
+        // ----------------------------------------
 
         const settingsOverlay = document.getElementById('settings-overlay');
         const settingsSheet = document.getElementById('settings-sheet');

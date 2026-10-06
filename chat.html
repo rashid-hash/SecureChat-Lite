@@ -1,14 +1,34 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
-<head>
+<head> 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Chat - SecureChat</title>
     
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#059669">
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
-    
+    <style>
+        /* ULTIMATE PWA KEYBOARD CSS FIX */
+        html, body {
+            height: 100% !important;
+            height: 100dvh !important;
+            height: -webkit-fill-available !important;
+            overflow: hidden !important;
+            overscroll-behavior-y: none;
+            position: fixed;
+            width: 100%;
+        }
+        .app-container {
+            height: 100% !important;
+            height: 100dvh !important;
+            height: -webkit-fill-available !important;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            width: 100%;
+        }
+    </style>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
