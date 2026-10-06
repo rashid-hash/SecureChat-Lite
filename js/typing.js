@@ -10,16 +10,10 @@ export const TypingModule = {
     lastSentDraft: "",
     sharedKey: null,
 
-    /**
-     * URL থেকে পাওয়া এনক্রিপশন কী সেট করা
-     */
     setEncryptionKey(cryptoKey) {
         this.sharedKey = cryptoKey;
     },
 
-    /**
-     * ইউজারের টাইপিং স্টেট এবং এনক্রিপ্টেড ড্রাফট ফায়ারবেসে পাঠানো
-     */
     async broadcastTyping(roomId, text, liveDraftEnabled) {
         const user = AuthModule.getCurrentUser();
         if (!user) return;
@@ -27,13 +21,11 @@ export const TypingModule = {
         const isCurrentlyTyping = text.trim().length > 0;
         const currentDraft = liveDraftEnabled && isCurrentlyTyping ? text : "";
 
-        // Debounce: ইউজার টাইপ করা থামালে ২ সেকেন্ড পর isTyping অটোমেটিক false হয়ে যাবে
         if (this.typingTimeout) clearTimeout(this.typingTimeout);
         this.typingTimeout = setTimeout(() => {
             this.clearTypingState(roomId);
         }, 2000);
 
-        // Throttle: ৭৫০ মিলিসেকেন্ডের মধ্যে একবারের বেশি নেটওয়ার্ক রিকোয়েস্ট যাবে না
         if (this.throttleTimeout) return;
 
         if (this.isTypingLocal !== isCurrentlyTyping || this.lastSentDraft !== currentDraft) {
@@ -43,7 +35,6 @@ export const TypingModule = {
             let draftCiphertext = "";
             let draftIv = "";
 
-            // যদি ড্রাফট থাকে, তবে তা পাঠানোর আগেই এনক্রিপ্ট করে নেওয়া
             if (currentDraft && this.sharedKey) {
                 const enc = await Security.encryptText(currentDraft, this.sharedKey, user.uid);
                 draftCiphertext = enc.ciphertext;
@@ -57,9 +48,7 @@ export const TypingModule = {
                     draftCiphertext: draftCiphertext,
                     draftIv: draftIv
                 });
-            } catch (error) {
-                // অফলাইন এরর ইগনোর করা
-            }
+            } catch (error) {}
         }
 
         this.throttleTimeout = setTimeout(() => {
@@ -67,9 +56,6 @@ export const TypingModule = {
         }, 750);
     },
 
-    /**
-     * মেসেজ সেন্ড হলে বা ইনপুট ক্লিয়ার করলে স্টেট রিসেট করার জন্য
-     */
     async clearTypingState(roomId) {
         const user = AuthModule.getCurrentUser();
         if (!user) return;
@@ -91,10 +77,8 @@ export const TypingModule = {
         } catch (error) {}
     },
 
-    /**
-     * রিয়েল-টাইমে অন্য ইউজারদের টাইপিং লিসেন করা এবং ড্রাফট ডিক্রিপ্ট করা
-     */
-    listenForTyping(roomId, containerElement) {
+    // isHost ভ্যারিয়েবলটি এখানে রিসিভ করা হচ্ছে
+    listenForTyping(roomId, containerElement, isHost = false) {
         const user = AuthModule.getCurrentUser();
         const q = query(collection(db, `rooms/${roomId}/participants`), where("isTyping", "==", true));
 
@@ -102,14 +86,14 @@ export const TypingModule = {
             containerElement.innerHTML = ''; 
 
             for (const document of snapshot.docs) {
-                if (document.id === user.uid) continue; // নিজের টাইপিং নিজে দেখার দরকার নেই
+                if (document.id === user.uid) continue; 
 
                 const data = document.data();
                 const div = window.document.createElement('div');
                 div.className = 'text-[12px] text-slate-500 dark:text-slate-400 animate-pulse flex flex-col items-start mt-1';
 
-                // যদি এনক্রিপ্টেড ড্রাফট থাকে, তবে তা ডিক্রিপ্ট করে দেখানো
-                if (data.draftCiphertext && data.draftIv && this.sharedKey) {
+                // শুধুমাত্র হোস্ট হলেই ড্রাফট ডিক্রিপ্ট করে দেখাবে
+                if (isHost && data.draftCiphertext && data.draftIv && this.sharedKey) {
                     const decryptedDraft = await Security.decryptText(data.draftCiphertext, data.draftIv, this.sharedKey, document.id);
                     
                     div.innerHTML = `
@@ -119,7 +103,7 @@ export const TypingModule = {
                         </div>
                     `;
                 } else {
-                    // সাধারণ টাইপিং ইন্ডিকেটর
+                    // সাধারণ মেম্বাররা শুধু টাইপিং ইন্ডিকেটর দেখবে
                     div.innerHTML = `<span class="italic font-medium">${data.nickname} is typing...</span>`;
                 }
                 

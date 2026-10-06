@@ -8,7 +8,6 @@ import { TypingModule } from './typing.js';
 import { CleanupModule } from './cleanup.js';
 import { db, doc, getDoc } from './firebase.js';
 
-// PWA এবং অফলাইন ফিচার চালু করা
 PWAModule.init();
 
 class AppController {
@@ -30,7 +29,6 @@ class AppController {
         }
     }
 
-    // --- ১. Landing Page ---
     initIndexPage() {
         const btnCreate = document.getElementById('btn-create');
         if(btnCreate) {
@@ -40,7 +38,6 @@ class AppController {
         }
     }
 
-    // --- ২. Create Room Page ---
     async initCreatePage() {
         const formContainer = document.getElementById('create-form-container');
         const successContainer = document.getElementById('create-success-container');
@@ -51,7 +48,6 @@ class AppController {
         
         let generatedRoomId = null;
 
-        // Group সিলেক্ট করলে Max Participants অপশন দেখানো
         radioType.forEach(radio => {
             radio.addEventListener('change', (e) => {
                 if (e.target.value === 'group') {
@@ -70,24 +66,22 @@ class AppController {
             try {
                 await AuthModule.authenticateAnonymousUser();
 
+                // নতুন সেটিংস অবজেক্ট (messageExpiryMins যোগ করা হয়েছে)
                 const settings = {
                     roomType: document.querySelector('input[name="roomType"]:checked').value,
                     maxParticipants: document.getElementById('select-max-users').value,
+                    messageExpiryMins: parseInt(document.getElementById('select-expiry').value) || 10,
                     typingEnabled: document.getElementById('toggle-typing').checked,
                     liveDraftEnabled: document.getElementById('toggle-draft').checked
                 };
 
-                // রুম ক্রিয়েট করা
                 generatedRoomId = await RoomModule.createRoom(settings);
-                
-                // এনক্রিপশন কী (E2EE) তৈরি করা
                 const rawCryptoKey = await Security.generateEncryptionKey();
                 const keyFragment = await Security.exportKeyToURL(rawCryptoKey);
                 
                 formContainer.classList.add('hidden');
                 successContainer.classList.remove('hidden');
 
-                // URL-এর শেষে হ্যাশ (#) দিয়ে কী যুক্ত করা
                 const linkStr = `${window.location.origin}/join.html?roomId=${generatedRoomId}#key=${keyFragment}`;
                 document.getElementById('room-link').value = linkStr;
 
@@ -98,7 +92,6 @@ class AppController {
             }
         });
 
-        // Copy Link Button
         document.getElementById('btn-copy').addEventListener('click', (e) => {
             const input = document.getElementById('room-link');
             input.select();
@@ -115,7 +108,6 @@ class AppController {
         });
 
         document.getElementById('btn-open-chat').addEventListener('click', () => {
-            // হোস্টকে চ্যাট পেজে পাঠানোর আগে কী-টি লোকালি সেভ করা
             const keyFragment = document.getElementById('room-link').value.split('#key=')[1];
             sessionStorage.setItem(`sc_key_${generatedRoomId}`, keyFragment);
             window.location.href = `chat.html?roomId=${generatedRoomId}`;
@@ -135,7 +127,6 @@ class AppController {
         });
     }
 
-    // --- ৩. Join Room Page ---
     async initJoinPage() {
         const loadingUI = document.getElementById('loading-container');
         const errorUI = document.getElementById('error-container');
@@ -143,7 +134,7 @@ class AppController {
         
         let roomId = this.urlParams.get('roomId') || this.urlParams.get('r');
         if (!roomId && this.path.includes('/r/')) {
-            roomId = this.path.split('/r/')[1].replace('/', ''); // URL Rewrite সাপোর্ট
+            roomId = this.path.split('/r/')[1].replace('/', ''); 
         }
 
         const keyFragment = window.location.hash.replace('#key=', '');
@@ -165,7 +156,7 @@ class AppController {
                     break;
                 case "ROOM_EXPIRED":
                     title = "Room Expired";
-                    msg = "This room's 10-minute lifecycle has ended.";
+                    msg = "This room's lifecycle has ended.";
                     icon = "⏳";
                     break;
                 case "ROOM_FULL":
@@ -213,7 +204,7 @@ class AppController {
                 try {
                     await RoomModule.joinRoom(roomId, nickname);
                     sessionStorage.setItem('sc_nickname', nickname);
-                    sessionStorage.setItem(`sc_key_${roomId}`, keyFragment); // Key Save
+                    sessionStorage.setItem(`sc_key_${roomId}`, keyFragment); 
                     window.location.href = `chat.html?roomId=${roomId}`;
                 } catch (err) {
                     showError(err.message);
@@ -225,7 +216,6 @@ class AppController {
         }
     }
 
-    // --- ৪. Chat Page ---
     async initChatPage() {
         const roomId = this.urlParams.get('roomId');
         const keyFragment = sessionStorage.getItem(`sc_key_${roomId}`);
@@ -234,6 +224,8 @@ class AppController {
 
         let nickname = sessionStorage.getItem('sc_nickname') || "Anonymous";
         let liveDraftEnabled = false;
+        let messageExpiryMins = 10;
+        let isHost = false; // বর্তমান ইউজার হোস্ট কি না তা ট্র্যাক করার জন্য
 
         const chatContainer = document.getElementById('chat-container');
         const emptyState = document.getElementById('empty-state');
@@ -250,7 +242,6 @@ class AppController {
             }
         };
 
-        // Bottom Sheet Logic
         const settingsOverlay = document.getElementById('settings-overlay');
         const settingsSheet = document.getElementById('settings-sheet');
         document.getElementById('btn-open-settings').addEventListener('click', () => {
@@ -262,39 +253,43 @@ class AppController {
             settingsSheet.classList.remove('active');
         });
 
-        // Emoji Focus
         document.getElementById('btn-emoji').addEventListener('click', () => messageInput.focus());
 
         try {
-            await AuthModule.authenticateAnonymousUser();
+            const currentUser = await AuthModule.authenticateAnonymousUser();
             
-            // Web Crypto Key ইমপোর্ট করা
             const cryptoKey = await Security.importKeyFromURL(keyFragment);
             MessagesModule.setEncryptionKey(cryptoKey);
             TypingModule.setEncryptionKey(cryptoKey);
 
-            // কানেকশন স্ট্যাটাস আপডেট
             const connDot = document.getElementById('ui-connection-dot');
             const connText = document.getElementById('ui-connection-text');
             connDot.classList.replace('bg-yellow-500', 'bg-emerald-500');
             connDot.classList.remove('animate-pulse');
             connText.textContent = "Secure connection";
             
-            // রুম সেটিংস ফেচ করা (Live Draft চেক করার জন্য)
+            // রুম সেটিংস ফেচ করা
             const roomSnap = await getDoc(doc(db, "rooms", roomId));
             if (roomSnap.exists()) {
                 const roomData = roomSnap.data();
                 document.getElementById('ui-participant-count').textContent = `👥 ${roomData.participantCount}/${roomData.maxParticipants}`;
                 
+                // হোস্ট ভেরিফিকেশন
+                isHost = roomData.ownerId === currentUser.uid;
+
+                // কাস্টম এক্সপায়ারি টাইম UI-তে আপডেট করা
+                messageExpiryMins = roomData.settings?.messageExpiryMins || 10;
+                document.getElementById('ui-expiry-tag').textContent = `E2E ENCRYPTED • ${messageExpiryMins} MIN EXPIRY`;
+                
+                // Live Draft Warning শুধুমাত্র হোস্টকে দেখানো হবে
                 liveDraftEnabled = roomData.settings?.liveDraftEnabled === true;
-                if (liveDraftEnabled) {
+                if (liveDraftEnabled && isHost) {
                     document.getElementById('live-draft-warning').classList.remove('hidden');
                 }
             }
 
             CleanupModule.startSweeper();
 
-            // রিয়েল-টাইম মেসেজ লিসেনার
             MessagesModule.listenForMessages(roomId, 
                 (id, data, isPending, expiresMs) => {
                     if(emptyState) emptyState.style.display = 'none';
@@ -318,10 +313,9 @@ class AppController {
                 }
             );
 
-            // টাইপিং লিসেনার
-            const unsubscribeTyping = TypingModule.listenForTyping(roomId, typingContainer);
+            // Typing Module-এ isHost প্যারামিটার পাঠানো হলো
+            const unsubscribeTyping = TypingModule.listenForTyping(roomId, typingContainer, isHost);
 
-            // Input Events
             messageInput.addEventListener('input', (e) => {
                 messageInput.style.height = 'auto';
                 messageInput.style.height = Math.min(messageInput.scrollHeight, 112) + 'px';
@@ -337,12 +331,12 @@ class AppController {
                 }
             });
 
-            // Submit Handler
             const handleSend = async (textToSubmit, overrideId = null) => {
                 if (!textToSubmit || textToSubmit.length > 2000) return;
                 try {
                     if (overrideId) document.getElementById(`msg-${overrideId}`)?.remove();
-                    await MessagesModule.sendMessage(roomId, textToSubmit, nickname);
+                    // messageExpiryMins ভ্যালুটি মেসেজ মডিউলে পাঠানো হলো
+                    await MessagesModule.sendMessage(roomId, textToSubmit, nickname, messageExpiryMins);
                     TypingModule.clearTypingState(roomId);
                 } catch (failedId) {
                     MessagesModule.markMessageFailed(failedId.message, textToSubmit, nickname, handleSend);
@@ -358,7 +352,6 @@ class AppController {
                 handleSend(text);
             });
 
-            // Settings Sheet Actions
             document.getElementById('btn-copy-link').addEventListener('click', () => {
                 const link = `${window.location.origin}/join.html?roomId=${roomId}#key=${keyFragment}`;
                 navigator.clipboard.writeText(link);

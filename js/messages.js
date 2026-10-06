@@ -15,7 +15,6 @@ export const MessagesModule = {
         this.sharedKey = cryptoKey;
     },
 
-    // ইউজার মেসেজ দেখলো কি না তা ট্র্যাক করা
     initObserver(roomId) {
         if (this.observer) return;
         this.observer = new IntersectionObserver((entries) => {
@@ -29,7 +28,6 @@ export const MessagesModule = {
         }, { threshold: 0.5 });
     },
 
-    // ডেটাবেসে Seen আপডেট করা
     async markAsSeen(roomId, msgId) {
         const user = AuthModule.getCurrentUser();
         const nickname = sessionStorage.getItem('sc_nickname') || "Anonymous";
@@ -43,7 +41,8 @@ export const MessagesModule = {
         } catch (e) {}
     },
 
-    async sendMessage(roomId, text, nickname) {
+    // কাস্টম expiryMins প্যারামিটার রিসিভ করছে
+    async sendMessage(roomId, text, nickname, expiryMins = 10) {
         const user = AuthModule.getCurrentUser();
         if (!user || !this.sharedKey) throw new Error("Missing auth or encryption key");
 
@@ -56,16 +55,19 @@ export const MessagesModule = {
         const now = Date.now();
         const { ciphertext, iv } = await Security.encryptText(text.trim(), this.sharedKey, user.uid);
 
+        // কাস্টম টাইম অনুযায়ী মিলিসেকেন্ড ক্যালকুলেট করা
+        const expiryMs = expiryMins * 60000; 
+
         const payload = {
             senderId: user.uid,
             senderNickname: nickname,
             ciphertext: ciphertext,
             iv: iv,
             createdAt: new Date(now),
-            expiresAt: new Date(now + 600000),
+            expiresAt: new Date(now + expiryMs), // কাস্টম এক্সপায়ারি টাইম
             type: "text",
             status: "sent",
-            seenBy: [] // Seen ট্র্যাকিং ফিল্ড
+            seenBy: []
         };
 
         try {
@@ -84,6 +86,8 @@ export const MessagesModule = {
         this.unsubscribeFn = onSnapshot(q, { includeMetadataChanges: true }, async (snapshot) => {
             for (const change of snapshot.docChanges()) {
                 const data = change.doc.data();
+                
+                // ডেটাবেসের কাস্টম এক্সপায়ারি টাইম অনুযায়ী UI রেন্ডার হবে
                 const expiresMs = data.expiresAt ? (data.expiresAt.seconds ? data.expiresAt.seconds * 1000 : data.expiresAt.getTime()) : (Date.now() + 600000);
 
                 if (change.type === "added") {
@@ -93,7 +97,7 @@ export const MessagesModule = {
                     onNewMessage(change.doc.id, data, change.doc.metadata.hasPendingWrites, expiresMs);
                 }
                 if (change.type === "modified") {
-                    onModify(change.doc.id, data, change.doc.metadata.hasPendingWrites); // Pass data for Seen UI
+                    onModify(change.doc.id, data, change.doc.metadata.hasPendingWrites); 
                 }
                 if (change.type === "removed") {
                     onRemove(change.doc.id);
@@ -157,7 +161,6 @@ export const MessagesModule = {
         
         container.appendChild(wrapper);
 
-        // অন্য কারো মেসেজ স্ক্রিনে আসলে Observer সেটা ধরে markAsSeen কল করবে
         if (!isSelf && this.observer) {
             const bubble = wrapper.querySelector('[data-observe="true"]');
             if (bubble) this.observer.observe(bubble);

@@ -24,9 +24,9 @@
             Waiting for network...
         </div>
 
-        <!-- Live Draft Warning (Typing Module) -->
+        <!-- Live Draft Warning (Updated for Host only) -->
         <div id="live-draft-warning" class="hidden bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500 text-[11px] font-bold text-center py-1.5 shadow-sm z-40 relative tracking-wide uppercase">
-            ⚠️ Live Draft is ON. Others can see your text.
+            ⚠️ Live Draft is ON. Host can see your text before sending.
         </div>
 
         <!-- Premium Header -->
@@ -57,10 +57,10 @@
         <!-- Main Chat Area -->
         <main id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar relative bg-slate-50 dark:bg-[#0b1121]">
             
-            <!-- Information Tag -->
+            <!-- Dynamic Information Tag -->
             <div class="text-center my-4">
-                <span class="inline-block bg-white dark:bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700/50 text-[10px] font-medium text-slate-500 shadow-sm uppercase tracking-wider">
-                    E2E Encrypted • 10 Min Expiry
+                <span id="ui-expiry-tag" class="inline-block bg-white dark:bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700/50 text-[10px] font-medium text-slate-500 shadow-sm uppercase tracking-wider">
+                    E2E Encrypted • SECURE ROOM
                 </span>
             </div>
 
@@ -82,7 +82,7 @@
             <form id="chat-form" class="flex items-end gap-2 px-3 py-3">
                 <div class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-end relative border border-transparent focus-within:border-emerald-500/50 transition-colors shadow-inner">
                     
-                    <!-- Emoji Button (Triggers native keyboard focus on mobile) -->
+                    <!-- Emoji Button -->
                     <button type="button" id="btn-emoji" class="p-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 shrink-0 active:scale-95 transition-transform">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </button>
