@@ -303,7 +303,7 @@ class AppController {
                     scrollToBottom(data.senderId === AuthModule.getCurrentUser().uid);
                 },
                 (id, data, isPending) => {
-                    MessagesModule.updateMessageState(id, isPending);
+                    MessagesModule.updateMessageState(id, data, isPending);
                 },
                 (id) => {
                     const msgEl = document.getElementById(`msg-${id}`);
