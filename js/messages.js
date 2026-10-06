@@ -41,7 +41,6 @@ export const MessagesModule = {
         } catch (e) {}
     },
 
-    // কাস্টম expiryMins প্যারামিটার রিসিভ করছে
     async sendMessage(roomId, text, nickname, expiryMins = 10) {
         const user = AuthModule.getCurrentUser();
         if (!user || !this.sharedKey) throw new Error("Missing auth or encryption key");
@@ -55,7 +54,6 @@ export const MessagesModule = {
         const now = Date.now();
         const { ciphertext, iv } = await Security.encryptText(text.trim(), this.sharedKey, user.uid);
 
-        // কাস্টম টাইম অনুযায়ী মিলিসেকেন্ড ক্যালকুলেট করা
         const expiryMs = expiryMins * 60000; 
 
         const payload = {
@@ -64,7 +62,7 @@ export const MessagesModule = {
             ciphertext: ciphertext,
             iv: iv,
             createdAt: new Date(now),
-            expiresAt: new Date(now + expiryMs), // কাস্টম এক্সপায়ারি টাইম
+            expiresAt: new Date(now + expiryMs), // কাস্টম এক্সপায়ারি টাইম এখানে সেট হচ্ছে
             type: "text",
             status: "sent",
             seenBy: []
@@ -87,8 +85,19 @@ export const MessagesModule = {
             for (const change of snapshot.docChanges()) {
                 const data = change.doc.data();
                 
-                // ডেটাবেসের কাস্টম এক্সপায়ারি টাইম অনুযায়ী UI রেন্ডার হবে
-                const expiresMs = data.expiresAt ? (data.expiresAt.seconds ? data.expiresAt.seconds * 1000 : data.expiresAt.getTime()) : (Date.now() + 600000);
+                // ডেটাবেস থেকে আসল expiresAt টাইম বের করা। ফলব্যাক হিসেবে ১০ মিনিট।
+                let expiresMs = Date.now() + 600000; 
+                if (data.expiresAt) {
+                    if (data.expiresAt.toDate) {
+                        expiresMs = data.expiresAt.toDate().getTime();
+                    } else if (data.expiresAt.seconds) {
+                        expiresMs = data.expiresAt.seconds * 1000;
+                    } else if (typeof data.expiresAt === 'number') {
+                        expiresMs = data.expiresAt;
+                    } else if (data.expiresAt instanceof Date) {
+                         expiresMs = data.expiresAt.getTime();
+                    }
+                }
 
                 if (change.type === "added") {
                     if (expiresMs <= Date.now()) continue; 
@@ -124,7 +133,7 @@ export const MessagesModule = {
         const wrapper = document.createElement('div');
         wrapper.id = `msg-${id}`;
         wrapper.className = `flex w-full message-enter ${isSelf ? 'justify-end' : 'justify-start'} ${showNickname ? 'mt-4' : 'mt-1'}`;
-        wrapper.dataset.expiresAt = expiresMs; 
+        wrapper.dataset.expiresAt = expiresMs; // এই expiresMs টাই cleanup.js ব্যবহার করে
 
         const statusClass = isPending ? 'opacity-70' : 'opacity-100';
         
