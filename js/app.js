@@ -392,7 +392,7 @@ class AppController {
                 scrollToBottom(true);
             }, 300);
         });
-        
+
         // ----------------------------------------
 
         const settingsOverlay = document.getElementById('settings-overlay');
@@ -431,6 +431,21 @@ class AppController {
 
         try {
             const currentUser = await AuthModule.authenticateAnonymousUser();
+
+            // --- ANTI-SCREENSHOT WATERMARK (NEW) ---
+            const applyWatermark = (userName) => {
+                // একটি ডাইনামিক SVG জলছাপ তৈরি করা হচ্ছে
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="250" height="150">
+                    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, sans-serif" font-size="15" font-weight="bold" fill="gray" opacity="0.12" transform="rotate(-35, 125, 75)">${userName}</text>
+                </svg>`;
+                // SVG টিকে Base64 এ কনভার্ট করে ব্যাকগ্রাউন্ডে সেট করা
+                const encoded = btoa(unescape(encodeURIComponent(svg)));
+                chatContainer.style.backgroundImage = `url("data:image/svg+xml;base64,${encoded}")`;
+                chatContainer.style.backgroundRepeat = 'repeat';
+                chatContainer.style.backgroundPosition = 'center';
+            };
+            // ইউজারের নিকনেম দিয়ে জলছাপটি চালু করে দিন
+            applyWatermark(nickname);
             
             const cryptoKey = await Security.importKeyFromURL(keyFragment);
             MessagesModule.setEncryptionKey(cryptoKey);
