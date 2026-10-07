@@ -144,91 +144,49 @@ class AppController {
     }
 
     async initCreatePage() {
-        const formContainer = document.getElementById('create-form-container');
-        const successContainer = document.getElementById('create-success-container');
-        const createForm = document.getElementById('form-create-room');
-        const submitBtn = document.getElementById('btn-submit-create');
-        const radioType = document.querySelectorAll('input[name="roomType"]');
-        const groupSettings = document.getElementById('group-settings');
-        
-        let generatedRoomId = null;
+        const btnCreate = document.getElementById('btn-create-room');
+        const formCreate = document.getElementById('form-create-room');
 
-        radioType.forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                if (e.target.value === 'group') {
-                    groupSettings.classList.remove('hidden');
-                } else {
-                    groupSettings.classList.add('hidden');
+        if(formCreate) {
+            formCreate.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Button Loading Animation
+                const originalText = btnCreate.innerHTML;
+                btnCreate.innerHTML = `<svg class="animate-spin h-5 w-5 mx-auto text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+                btnCreate.disabled = true;
+
+                try {
+                    // ১. ইউজারকে আগে অথেনটিকেট করা হচ্ছে (যাতে Unauthorized এরর না আসে)
+                    await AuthModule.authenticateAnonymousUser();
+
+                    // ২. ফ্রেশ সেটিংস রিড করা
+                    const settings = {
+                        roomType: document.querySelector('input[name="roomType"]:checked').value,
+                        maxParticipants: document.getElementById('select-max-users').value,
+                        messageExpiryMins: parseInt(document.getElementById('select-expiry').value) || 10,
+                        typingEnabled: document.getElementById('toggle-typing').checked,
+                        liveDraftEnabled: document.getElementById('toggle-draft').checked
+                    };
+
+                    // ৩. রুম তৈরি এবং এনক্রিপশন কি (Key) জেনারেট করা
+                    const roomId = await RoomModule.createRoom(settings);
+                    const cryptoKey = await Security.generateEncryptionKey();
+                    const keyFragment = await Security.exportKeyToURL(cryptoKey);
+                    
+                    // Key সেভ করে চ্যাট পেজে রিডাইরেক্ট
+                    sessionStorage.setItem(`sc_key_${roomId}`, keyFragment);
+                    window.location.href = `chat.html?roomId=${roomId}`;
+
+                } catch (error) {
+                    console.error("Room Creation Error:", error); // কনসোলে এরর প্রিন্ট হবে
+                    await CustomUI.alert("Creation Failed", "Failed to create room. Please check your internet connection.", "error");
+                    
+                    btnCreate.innerHTML = originalText;
+                    btnCreate.disabled = false;
                 }
             });
-        });
-
-        createForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<span class="animate-pulse">Generating Secure Keys...</span>`;
-
-            try {
-                await AuthModule.authenticateAnonymousUser();
-
-                const settings = {
-                    roomType: document.querySelector('input[name="roomType"]:checked').value,
-                    maxParticipants: document.getElementById('select-max-users').value,
-                    messageExpiryMins: parseInt(document.getElementById('select-expiry').value) || 10,
-                    typingEnabled: document.getElementById('toggle-typing').checked,
-                    liveDraftEnabled: document.getElementById('toggle-draft').checked
-                };
-
-                generatedRoomId = await RoomModule.createRoom(settings);
-                const rawCryptoKey = await Security.generateEncryptionKey();
-                const keyFragment = await Security.exportKeyToURL(rawCryptoKey);
-                
-                formContainer.classList.add('hidden');
-                successContainer.classList.remove('hidden');
-
-                const linkStr = `${window.location.origin}/join.html?roomId=${generatedRoomId}#key=${keyFragment}`;
-                document.getElementById('room-link').value = linkStr;
-
-            } catch (err) {
-                await CustomUI.alert("Creation Failed", "Failed to create room. Please check your internet connection.", "error");
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = "Generate Secure Room";
-            }
-        });
-
-        document.getElementById('btn-copy').addEventListener('click', (e) => {
-            const input = document.getElementById('room-link');
-            input.select();
-            input.setSelectionRange(0, 99999); 
-            navigator.clipboard.writeText(input.value);
-            
-            const btn = e.target;
-            btn.textContent = "Copied!";
-            btn.classList.add('bg-emerald-100', 'text-emerald-700');
-            setTimeout(() => {
-                btn.textContent = "Copy Invite Link";
-                btn.classList.remove('bg-emerald-100', 'text-emerald-700');
-            }, 2000);
-        });
-
-        document.getElementById('btn-open-chat').addEventListener('click', () => {
-            const keyFragment = document.getElementById('room-link').value.split('#key=')[1];
-            sessionStorage.setItem(`sc_key_${generatedRoomId}`, keyFragment);
-            window.location.href = `chat.html?roomId=${generatedRoomId}`;
-        });
-
-        document.getElementById('btn-lock-early').addEventListener('click', async (e) => {
-            const btn = e.target;
-            btn.disabled = true;
-            try {
-                await RoomModule.lockRoom(generatedRoomId);
-                btn.innerHTML = "🔒 Room Locked";
-                btn.classList.add('text-amber-600', 'border-amber-200', 'bg-amber-50');
-            } catch (err) {
-                await CustomUI.alert("Lock Failed", "Could not lock room.", "error");
-                btn.disabled = false;
-            }
-        });
+        }
     }
 
     async initJoinPage() {

@@ -10,41 +10,26 @@ export const RoomModule = {
      */
     async createRoom(settings) {
         const user = AuthModule.getCurrentUser();
-        if (!user) throw new Error("AUTH_REQUIRED");
+        if (!user) throw new Error("Unauthorized");
 
-        // একটি সিকিউর রুম আইডি তৈরি করা
-        const roomId = Security.generateSecureRoomId(16);
+        const roomId = Security.generateSecureRoomId(12);
         const roomRef = doc(db, "rooms", roomId);
-        
-        // ঠিক ১০ মিনিট পর রুমের মেয়াদ শেষ হবে
-        const expiresAt = new Date(Date.now() + 10 * 60000); 
 
-        const maxUsers = settings.roomType === '1on1' ? 2 : parseInt(settings.maxParticipants);
-
-        // ১. মেইন রুম ডকুমেন্ট তৈরি করা
-        await setDoc(roomRef, {
+        const payload = {
             ownerId: user.uid,
-            roomType: settings.roomType,
-            maxParticipants: maxUsers,
-            participantCount: 1, // হোস্ট নিজেই প্রথম মেম্বার
-            createdAt: serverTimestamp(),
-            expiresAt: expiresAt,
-            isLocked: false,
+            createdAt: new Date(),
+            status: "active",
+            participantCount: 1,
+            maxParticipants: parseInt(settings.maxParticipants) || 5,
             settings: {
+                roomType: settings.roomType,
+                messageExpiryMins: settings.messageExpiryMins,
                 typingEnabled: settings.typingEnabled,
                 liveDraftEnabled: settings.liveDraftEnabled
             }
-        });
+        };
 
-        // ২. হোস্টকে পার্টিসিপেন্ট সাব-কালেকশনে যুক্ত করা
-        const participantRef = doc(db, `rooms/${roomId}/participants`, user.uid);
-        await setDoc(participantRef, {
-            nickname: "Host", 
-            joinedAt: serverTimestamp(),
-            lastSeen: serverTimestamp(),
-            role: "owner"
-        });
-
+        await setDoc(roomRef, payload);
         return roomId;
     },
 
