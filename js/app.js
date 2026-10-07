@@ -144,48 +144,60 @@ class AppController {
     }
 
     async initCreatePage() {
-        const btnCreate = document.getElementById('btn-create-room');
-        const formCreate = document.getElementById('form-create-room');
-
-        if(formCreate) {
+        // Form er ID jeta hok, auto khuje nebe
+        const formCreate = document.getElementById('form-create') || document.getElementById('form-create-room');
+        
+        if (formCreate) {
             formCreate.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
-                // Button Loading Animation
-                const originalText = btnCreate.innerHTML;
-                btnCreate.innerHTML = `<svg class="animate-spin h-5 w-5 mx-auto text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
-                btnCreate.disabled = true;
+                // ID charai submit button khuje ber korar ninja technique!
+                const btnCreate = formCreate.querySelector('button[type="submit"]');
+                let originalText = "";
+                
+                // Jodi button thake tobe animation set korbe
+                if (btnCreate) {
+                    originalText = btnCreate.innerHTML;
+                    btnCreate.innerHTML = `<svg class="animate-spin h-5 w-5 mx-auto text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+                    btnCreate.disabled = true;
+                }
 
                 try {
-                    // ১. ইউজারকে আগে অথেনটিকেট করা হচ্ছে (যাতে Unauthorized এরর না আসে)
                     await AuthModule.authenticateAnonymousUser();
 
-                    // ২. ফ্রেশ সেটিংস রিড করা
+                    const roomTypeInput = document.querySelector('input[name="roomType"]:checked');
+                    const maxUsersSelect = document.getElementById('select-max-users');
+                    const expirySelect = document.getElementById('select-expiry');
+                    const toggleTyping = document.getElementById('toggle-typing');
+                    const toggleDraft = document.getElementById('toggle-draft');
+
                     const settings = {
-                        roomType: document.querySelector('input[name="roomType"]:checked').value,
-                        maxParticipants: document.getElementById('select-max-users').value,
-                        messageExpiryMins: parseInt(document.getElementById('select-expiry').value) || 10,
-                        typingEnabled: document.getElementById('toggle-typing').checked,
-                        liveDraftEnabled: document.getElementById('toggle-draft').checked
+                        roomType: roomTypeInput ? roomTypeInput.value : 'public',
+                        maxParticipants: maxUsersSelect ? parseInt(maxUsersSelect.value) : 5,
+                        messageExpiryMins: expirySelect ? parseInt(expirySelect.value) : 10,
+                        typingEnabled: toggleTyping ? toggleTyping.checked : true,
+                        liveDraftEnabled: toggleDraft ? toggleDraft.checked : false
                     };
 
-                    // ৩. রুম তৈরি এবং এনক্রিপশন কি (Key) জেনারেট করা
                     const roomId = await RoomModule.createRoom(settings);
                     const cryptoKey = await Security.generateEncryptionKey();
                     const keyFragment = await Security.exportKeyToURL(cryptoKey);
                     
-                    // Key সেভ করে চ্যাট পেজে রিডাইরেক্ট
                     sessionStorage.setItem(`sc_key_${roomId}`, keyFragment);
                     window.location.href = `chat.html?roomId=${roomId}`;
 
                 } catch (error) {
-                    console.error("Room Creation Error:", error); // কনসোলে এরর প্রিন্ট হবে
-                    await CustomUI.alert("Creation Failed", "Failed to create room. Please check your internet connection.", "error");
+                    console.error("Room Creation Error:", error);
+                    await CustomUI.alert("Creation Failed", error.message || "Failed to create room.", "error");
                     
-                    btnCreate.innerHTML = originalText;
-                    btnCreate.disabled = false;
+                    if (btnCreate) {
+                        btnCreate.innerHTML = originalText || "Generate Secure Room";
+                        btnCreate.disabled = false;
+                    }
                 }
             });
+        } else {
+            console.error("Form element not found in HTML!");
         }
     }
 
