@@ -529,22 +529,92 @@ class AppController {
                 }
             });
 
-            const handleSend = async (textToSubmit, overrideId = null) => {
-                if (!textToSubmit || textToSubmit.length > 2000) return;
+            // ১. আপডেটেড handleSend ফাংশন (ইমেজ সাপোর্ট সহ)
+            const handleSend = async (textToSubmit, overrideId = null, msgType = "text") => {
+                if (!textToSubmit) return;
+                // সাধারণ টেক্সটের ক্ষেত্রে লিমিট চেক, ইমেজের Base64 অনেক বড় হবে তাই সেটি স্কিপ করা হলো
+                if (msgType === "text" && textToSubmit.length > 2000) return;
+                
                 try {
                     if (overrideId) document.getElementById(`msg-${overrideId}`)?.remove();
                     
-                    await MessagesModule.sendMessage(roomId, textToSubmit, nickname, messageExpiryMins, isBurnMode);
+                    // msgType (text বা image) ডেটাবেসে পাঠানো হচ্ছে
+                    await MessagesModule.sendMessage(roomId, textToSubmit, nickname, messageExpiryMins, isBurnMode, msgType);
                     TypingModule.clearTypingState(roomId);
-
-                    SoundModule.playPopSound();
-                    SoundModule.triggerHaptic(20);
+                    
+                    // মেসেজ সেন্ড করার সাউন্ড ও হ্যাপটিক ফিডব্যাক
+                    if (typeof SoundModule !== 'undefined') {
+                        SoundModule.playPopSound();
+                        SoundModule.triggerHaptic(20);
+                    }
                     
                     if(isBurnMode && btnBurn) btnBurn.click(); 
                 } catch (failedId) {
                     MessagesModule.markMessageFailed(failedId.message, textToSubmit, nickname, handleSend);
                 }
             };
+
+            // ২. ইমেজ প্রসেসিং ও কম্প্রেশন লজিক
+            const btnAttach = document.getElementById('btn-attach');
+            const inputImage = document.getElementById('input-image');
+
+            if (btnAttach && inputImage) {
+                btnAttach.addEventListener('click', () => {
+                    inputImage.click(); // অ্যাটাচ বাটনে ক্লিক করলে হিডেন ফাইল ইনপুট ওপেন হবে
+                });
+
+                inputImage.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    // ছবি সেন্ড হওয়ার সময় বাটনটিকে একটু অপাসিটি কমিয়ে বোঝানো হবে যে কাজ চলছে
+                    btnAttach.style.opacity = '0.5';
+                    btnAttach.classList.add('animate-pulse');
+
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+
+                            // ছবির সাইজ ছোট করার লজিক (Max width/height 800px)
+                            const MAX_SIZE = 800;
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > height) {
+                                if (width > MAX_SIZE) {
+                                    height = Math.round(height * (MAX_SIZE / width));
+                                    width = MAX_SIZE;
+                                }
+                            } else {
+                                if (height > MAX_SIZE) {
+                                    width = Math.round(width * (MAX_SIZE / height));
+                                    height = MAX_SIZE;
+                                }
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            // WebP ফরম্যাটে ছবি কম্প্রেস করা (Quality: 0.6 বা ৬০% - যা ফায়ারবেস লিমিট বাঁচাবে)
+                            const compressedBase64 = canvas.toDataURL('image/webp', 0.6);
+
+                            // এনক্রিপ্ট ও সেন্ড করার জন্য handleSend-কে কল করা (msgType = 'image')
+                            handleSend(compressedBase64, null, 'image');
+                            
+                            // কাজ শেষ হলে ইনপুট ক্লিয়ার ও বাটন ঠিক করা
+                            inputImage.value = '';
+                            btnAttach.style.opacity = '1';
+                            btnAttach.classList.remove('animate-pulse');
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
 
             chatForm.addEventListener('submit', (e) => {
                 e.preventDefault();

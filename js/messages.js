@@ -48,7 +48,7 @@ export const MessagesModule = {
     },
 
     // isBurnOnRead প্যারামিটার রিসিভ করছে
-    async sendMessage(roomId, text, nickname, expiryMins = 10, isBurnOnRead = false) {
+    async sendMessage(roomId, textOrBase64, nickname, expiryMins = 10, isBurnOnRead = false, msgType = "text") {
         const user = AuthModule.getCurrentUser();
         if (!user || !this.sharedKey) throw new Error("Missing auth or encryption key");
 
@@ -59,7 +59,8 @@ export const MessagesModule = {
         const msgRef = doc(db, `rooms/${roomId}/messages`, messageId);
         
         const now = Date.now();
-        const { ciphertext, iv } = await Security.encryptText(text.trim(), this.sharedKey, user.uid);
+        // মেসেজটি টেক্সট হোক বা ছবির Base64, পুরোটাই এনক্রিপ্ট হয়ে যাবে!
+        const { ciphertext, iv } = await Security.encryptText(textOrBase64.trim(), this.sharedKey, user.uid);
         const expiryMs = expiryMins * 60000; 
 
         const payload = {
@@ -69,10 +70,10 @@ export const MessagesModule = {
             iv: iv,
             createdAt: new Date(now),
             expiresAt: new Date(now + expiryMs),
-            type: "text",
+            type: msgType, // "text" অথবা "image" সেভ হবে
             status: "sent",
             seenBy: [],
-            isBurnOnRead: isBurnOnRead // ডেটাবেসে Burn স্ট্যাটাস সেভ
+            isBurnOnRead: isBurnOnRead
         };
 
         try {
@@ -151,7 +152,16 @@ export const MessagesModule = {
                 VIEW ONCE
             </span>
         ` : '';
-        
+
+        let contentHTML = '';
+        if (data.type === 'image') {
+            // যদি ছবি হয়, তাহলে Base64 দিয়ে <img> ট্যাগ রেন্ডার করবে
+            contentHTML = `<img src="${data.plaintext}" class="rounded-xl max-w-full h-auto max-h-56 object-cover cursor-pointer hover:opacity-90 transition-opacity border border-slate-200 dark:border-slate-700/50" onclick="window.open(this.src, '_blank')">`;
+        } else {
+            // সাধারণ টেক্সট হলে আগের মতোই থাকবে
+            contentHTML = this.escapeHTML(data.plaintext);
+        }
+
         wrapper.innerHTML = `
             <div class="max-w-[85%] sm:max-w-[70%] flex flex-col ${isSelf ? 'items-end' : 'items-start'} relative">
                 ${(!isSelf && showNickname) ? `<span class="text-[11px] font-medium text-slate-500 mb-1 ml-1">${data.senderNickname}</span>` : ''}
@@ -161,9 +171,10 @@ export const MessagesModule = {
                 <div class="relative px-4 py-2.5 shadow-sm text-[15px] leading-relaxed break-words
                     ${isSelf ? 'bg-emerald-600 text-white rounded-2xl rounded-tr-sm' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-sm text-slate-900 dark:text-white'} 
                     ${data.isBurnOnRead ? 'border-orange-500/50 dark:border-orange-500/50 ring-1 ring-orange-500/30' : ''}
+                    ${data.type === 'image' ? 'p-1.5' : ''} /* ছবির জন্য প্যাডিং কমানো */
                     ${statusClass}" 
                     ${!isSelf ? `data-observe="true" data-msg-id="${id}" data-burn="${data.isBurnOnRead || false}"` : ''}>
-                    ${this.escapeHTML(data.plaintext)} 
+                    ${contentHTML} 
                 </div>
                 
                 <div class="flex flex-col items-${isSelf ? 'end' : 'start'} mt-1 px-1 min-h-[16px]">

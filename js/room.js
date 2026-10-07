@@ -16,8 +16,8 @@ export const RoomModule = {
         const roomId = Security.generateSecureRoomId(16);
         const roomRef = doc(db, "rooms", roomId);
         
-        // রুমের মেয়াদ ২৪ ঘণ্টা রাখা হচ্ছে, তবে মেসেজগুলো ইউজারের কাস্টম টাইমে ডিলিট হবে
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60000); 
+        // ঠিক ১০ মিনিট পর রুমের মেয়াদ শেষ হবে
+        const expiresAt = new Date(Date.now() + 10 * 60000); 
 
         const maxUsers = settings.roomType === '1on1' ? 2 : parseInt(settings.maxParticipants);
 
@@ -31,13 +31,12 @@ export const RoomModule = {
             expiresAt: expiresAt,
             isLocked: false,
             settings: {
-                messageExpiryMins: settings.messageExpiryMins, // কাস্টম টাইম সেভ করা হলো
                 typingEnabled: settings.typingEnabled,
                 liveDraftEnabled: settings.liveDraftEnabled
             }
         });
 
-        // ২. হোস্টকে পার্টিসিপেন্ট সাব-কালেকশনে যুক্ত করা (role: "owner")
+        // ২. হোস্টকে পার্টিসিপেন্ট সাব-কালেকশনে যুক্ত করা
         const participantRef = doc(db, `rooms/${roomId}/participants`, user.uid);
         await setDoc(participantRef, {
             nickname: "Host", 
@@ -63,7 +62,7 @@ export const RoomModule = {
 
             const data = roomSnap.data();
 
-            // ক্লায়েন্ট-সাইড রুম এক্সপায়ারি চেক
+            // ক্লায়েন্ট-সাইড এক্সপায়ারি চেক
             if (data.expiresAt && data.expiresAt.toDate() < new Date()) {
                 throw new Error("ROOM_EXPIRED");
             }
@@ -76,6 +75,7 @@ export const RoomModule = {
             if (data.participantCount >= data.maxParticipants) {
                 const user = AuthModule.getCurrentUser();
                 if (user) {
+                    // যদি ইউজার আগে থেকেই জয়েন করে থাকে (যেমন পেজ রিলোড দিলে), তবে তাকে ঢুকতে দেওয়া হবে
                     const participantSnap = await getDoc(doc(db, `rooms/${roomId}/participants`, user.uid));
                     if (participantSnap.exists()) return true; 
                 }
@@ -84,6 +84,7 @@ export const RoomModule = {
 
             return true;
         } catch (error) {
+            // নেটওয়ার্ক বা কানেকশন এরর চেক
             if (error.code === 'unavailable' || error.message.includes('offline')) {
                 throw new Error("CONNECTION_ERROR");
             }
@@ -101,6 +102,7 @@ export const RoomModule = {
         const roomRef = doc(db, "rooms", roomId);
         const participantRef = doc(db, `rooms/${roomId}/participants`, user.uid);
 
+        // runTransaction ব্যবহার করা হচ্ছে যাতে একসাথে ২ জন জয়েন করলে ক্যাপাসিটি লিমিট ব্রেক না হয়
         await runTransaction(db, async (transaction) => {
             const roomDoc = await transaction.get(roomRef);
             
@@ -129,6 +131,7 @@ export const RoomModule = {
                     participantCount: roomData.participantCount + 1
                 });
             } else {
+                // আগে থেকেই থাকলে শুধু নিকনেম আপডেট করা
                 transaction.update(participantRef, {
                     nickname: nickname,
                     lastSeen: serverTimestamp()
