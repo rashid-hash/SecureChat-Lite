@@ -303,7 +303,8 @@ class AppController {
         let liveDraftEnabled = false;
         let messageExpiryMins = 10;
         let isHost = false;
-        let isBurnMode = false; // Burn Mode State
+        let isBurnMode = false;
+        window.currentReplyToId = null;
 
         const chatContainer = document.getElementById('chat-container');
         const emptyState = document.getElementById('empty-state');
@@ -364,7 +365,25 @@ class AppController {
             }, 300);
         });
 
-        // ----------------------------------------
+        // --- SWIPE TO REPLY LOGIC ---
+        window.startReply = (msgId, senderName, text) => {
+            window.currentReplyToId = msgId;
+            document.getElementById('reply-preview-name').textContent = senderName;
+            document.getElementById('reply-preview-text').textContent = text;
+            document.getElementById('reply-preview').classList.remove('hidden');
+            document.getElementById('message-input').focus();
+            
+            // হ্যাপটিক ভাইব্রেশন (যদি সাউন্ড মডিউল থাকে)
+            if (typeof SoundModule !== 'undefined') SoundModule.triggerHaptic(20);
+        };
+
+        const btnCloseReply = document.getElementById('btn-close-reply');
+        if(btnCloseReply) {
+            btnCloseReply.addEventListener('click', () => {
+                window.currentReplyToId = null;
+                document.getElementById('reply-preview').classList.add('hidden');
+            });
+        }
 
         const settingsOverlay = document.getElementById('settings-overlay');
         const settingsSheet = document.getElementById('settings-sheet');
@@ -499,20 +518,24 @@ class AppController {
                 }
             });
 
-            // ১. আপডেটেড handleSend ফাংশন (ইমেজ সাপোর্ট সহ)
+            // আপডেটেড handleSend ফাংশন (রিপ্লাই সাপোর্ট সহ)
             const handleSend = async (textToSubmit, overrideId = null, msgType = "text") => {
                 if (!textToSubmit) return;
-                // সাধারণ টেক্সটের ক্ষেত্রে লিমিট চেক, ইমেজের Base64 অনেক বড় হবে তাই সেটি স্কিপ করা হলো
                 if (msgType === "text" && textToSubmit.length > 2000) return;
                 
                 try {
                     if (overrideId) document.getElementById(`msg-${overrideId}`)?.remove();
                     
-                    // msgType (text বা image) ডেটাবেসে পাঠানো হচ্ছে
-                    await MessagesModule.sendMessage(roomId, textToSubmit, nickname, messageExpiryMins, isBurnMode, msgType);
+                    const replyId = window.currentReplyToId; // রিপ্লাই আইডি নেওয়া হলো
+                    
+                    // msgType এর পরে replyId পাঠানো হচ্ছে
+                    await MessagesModule.sendMessage(roomId, textToSubmit, nickname, messageExpiryMins, isBurnMode, msgType, replyId);
+                    
                     TypingModule.clearTypingState(roomId);
                     
-                    // মেসেজ সেন্ড করার সাউন্ড ও হ্যাপটিক ফিডব্যাক
+                    // মেসেজ সেন্ড হলে রিপ্লাই বক্স হাইড করে দেওয়া
+                    if (btnCloseReply) btnCloseReply.click();
+                    
                     if (typeof SoundModule !== 'undefined') {
                         SoundModule.playPopSound();
                         SoundModule.triggerHaptic(20);
