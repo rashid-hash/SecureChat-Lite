@@ -166,7 +166,8 @@ export const MessagesModule = {
         // --- NEW: QUOTED REPLY RENDER LOGIC ---
         let replyHTML = '';
         if (data.replyToId) {
-            const repliedEl = document.getElementById(`msg-${data.replyToId}`);
+            // এখন সে সঠিক আইডি (reply-data-) খুঁজবে
+            const repliedEl = document.getElementById(`reply-data-${data.replyToId}`);
             let repliedName = "Someone";
             let repliedText = "Message expired or deleted";
             
@@ -176,13 +177,12 @@ export const MessagesModule = {
             }
             
             replyHTML = `
-            <div class="mb-1.5 px-2 py-1 bg-black/10 dark:bg-white/10 rounded-md border-l-[3px] border-emerald-500 text-left text-xs cursor-pointer opacity-90 hover:opacity-100 transition-opacity" onclick="document.getElementById('msg-${data.replyToId}')?.scrollIntoView({behavior: 'smooth', block: 'center'})">
+            <div class="mb-1.5 px-2 py-1 bg-black/10 dark:bg-white/10 rounded-md border-l-[3px] border-emerald-500 text-left text-xs cursor-pointer opacity-90 hover:opacity-100 transition-opacity" onclick="document.getElementById('reply-data-${data.replyToId}')?.scrollIntoView({behavior: 'smooth', block: 'center'})">
                 <div class="font-bold text-emerald-700 dark:text-emerald-400">${this.escapeHTML(repliedName)}</div>
                 <div class="truncate max-w-[200px]">${this.escapeHTML(repliedText)}</div>
             </div>`;
         }
 
-        // মেসেজের টেক্সট বা ইমেজের প্রিভিউ তৈরি করা (রিপ্লাইয়ের জন্য)
         const msgTextSnippet = data.type === 'image' ? '📷 Photo' : (data.plaintext || '').substring(0, 50);
 
         wrapper.innerHTML = `
@@ -191,18 +191,17 @@ export const MessagesModule = {
                 
                 ${burnBadge}
                 
-                <!-- Swipe to Reply Container (NEW) -->
-                <div id="msg-${id}" class="w-full flex flex-col ${isSelf ? 'items-end' : 'items-start'}" data-name="${data.senderNickname}" data-text="${this.escapeHTML(msgTextSnippet)}">
+                <!-- Swipe to Reply Container (ID FIXED) -->
+                <div id="reply-data-${id}" class="w-full flex flex-col ${isSelf ? 'items-end' : 'items-start'}" data-name="${data.senderNickname}" data-text="${this.escapeHTML(msgTextSnippet)}">
                     
-                    <!-- msg-bubble ক্লাস যুক্ত করা হয়েছে (NEW) -->
                     <div class="msg-bubble relative px-4 py-2.5 shadow-sm text-[15px] leading-relaxed break-words
                         ${isSelf ? 'bg-emerald-600 text-white rounded-2xl rounded-tr-sm' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-sm text-slate-900 dark:text-white'} 
                         ${data.isBurnOnRead ? 'border-orange-500/50 dark:border-orange-500/50 ring-1 ring-orange-500/30' : ''}
-                        ${data.type === 'image' ? 'p-1.5' : ''} /* ছবির জন্য প্যাডিং কমানো */
+                        ${data.type === 'image' ? 'p-1.5' : ''}
                         ${statusClass}" 
                         ${!isSelf ? `data-observe="true" data-msg-id="${id}" data-burn="${data.isBurnOnRead || false}"` : ''}>
                         
-                        ${replyHTML} <!-- রিপ্লাই বক্স থাকলে এখানে শো করবে (NEW) -->
+                        ${replyHTML}
                         ${contentHTML} 
                     </div>
 
@@ -220,8 +219,8 @@ export const MessagesModule = {
         
         container.appendChild(wrapper);
 
-        // --- SWIPE TO REPLY TOUCH TRACKING ---
-        const msgContainer = wrapper.querySelector(`#msg-${id}`);
+        // --- SWIPE TO REPLY TOUCH TRACKING (ID FIXED) ---
+        const msgContainer = wrapper.querySelector(`#reply-data-${id}`);
         const bubbleEl = wrapper.querySelector('.msg-bubble');
         
         if (msgContainer && bubbleEl && window.startReply) {
@@ -232,7 +231,7 @@ export const MessagesModule = {
             msgContainer.addEventListener('touchstart', (e) => {
                 touchStartX = e.touches[0].clientX;
                 isSwiping = true;
-                bubbleEl.style.transition = 'none'; // সোয়াইপের সময় অ্যানিমেশন অফ
+                bubbleEl.style.transition = 'none'; 
             }, { passive: true });
 
             msgContainer.addEventListener('touchmove', (e) => {
@@ -240,7 +239,6 @@ export const MessagesModule = {
                 currentX = e.touches[0].clientX;
                 const diffX = currentX - touchStartX;
                 
-                // শুধুমাত্র ডানদিকে সোয়াইপ (সর্বোচ্চ 60px)
                 if (diffX > 0 && diffX < 60) {
                     bubbleEl.style.transform = `translateX(${diffX}px)`;
                 }
@@ -251,11 +249,9 @@ export const MessagesModule = {
                 isSwiping = false;
                 const diffX = currentX - touchStartX;
                 
-                // বাবল আবার আগের জায়গায় ফিরে আসবে
                 bubbleEl.style.transition = 'transform 0.2s ease-out';
                 bubbleEl.style.transform = 'translateX(0px)';
                 
-                // যদি 40px এর বেশি টানা হয়, তবে রিপ্লাই ট্রিগার হবে
                 if (diffX > 40) {
                     const name = msgContainer.getAttribute('data-name');
                     const text = msgContainer.getAttribute('data-text');
