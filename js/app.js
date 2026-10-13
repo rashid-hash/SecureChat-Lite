@@ -666,16 +666,17 @@ class AppController {
                 });
             }
 
-            // --- EMOJI REACTION PICKER UI ---
+            // --- EMOJI REACTION PICKER UI (MASTER FIX) ---
         const reactionPicker = document.getElementById('reaction-picker');
         let currentReactMsgId = null;
 
         window.showEmojiPicker = (rId, mId, x, y) => {
+            if(!reactionPicker) return;
             currentReactMsgId = mId;
             
-            reactionPicker.classList.remove('hidden');
+            // সরাসরি CSS দিয়ে শো করানো হলো
+            reactionPicker.style.display = 'flex'; 
             
-            // আঙুল যেখানে প্রেস করবে, তার ঠিক উপরে মেনুটি ওপেন হবে
             const pickerWidth = 240; 
             let leftPos = x - (pickerWidth / 2);
             if(leftPos < 10) leftPos = 10;
@@ -687,24 +688,49 @@ class AppController {
             if (typeof SoundModule !== 'undefined') SoundModule.triggerHaptic(40);
         };
 
-        // স্ক্রিনের অন্য কোথাও ক্লিক করলে মেনু হাইড হয়ে যাবে
-        document.addEventListener('touchstart', (e) => {
-            if (!e.target.closest('.msg-bubble') && !e.target.closest('#reaction-picker')) {
-                reactionPicker.classList.add('hidden');
-            }
-        }, { passive: true });
-        
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.msg-bubble') && !e.target.closest('#reaction-picker')) {
-                reactionPicker.classList.add('hidden');
+        // গ্লোবাল ডাবল-ক্লিক লিসেনার (পিসির জন্য)
+        document.addEventListener('dblclick', (e) => {
+            const bubble = e.target.closest('.msg-bubble');
+            if (bubble) {
+                const parent = bubble.closest('[id^="reply-data-"]');
+                if (parent) {
+                    e.preventDefault();
+                    const msgId = parent.id.replace('reply-data-', '');
+                    window.showEmojiPicker(roomId, msgId, e.clientX, e.clientY);
+                }
             }
         });
 
-        // ইমোজিতে ক্লিক করলে ডেটাবেসে সেভ হবে
+        // গ্লোবাল লং-প্রেস লিসেনার (মোবাইলের জন্য)
+        let masterPressTimer;
+        document.addEventListener('touchstart', (e) => {
+            const bubble = e.target.closest('.msg-bubble');
+            if (bubble) {
+                masterPressTimer = setTimeout(() => {
+                    const parent = bubble.closest('[id^="reply-data-"]');
+                    if (parent) {
+                        const msgId = parent.id.replace('reply-data-', '');
+                        window.showEmojiPicker(roomId, msgId, e.touches[0].clientX, e.touches[0].clientY);
+                    }
+                }, 400);
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', () => clearTimeout(masterPressTimer));
+        document.addEventListener('touchmove', () => clearTimeout(masterPressTimer));
+
+        // বাইরে ক্লিক করলে হাইড হবে
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.msg-bubble') && !e.target.closest('#reaction-picker')) {
+                if(reactionPicker) reactionPicker.style.display = 'none';
+            }
+        });
+
+        // ইমোজিতে ক্লিক করলে ডেটাবেসে যাবে
         document.querySelectorAll('.reaction-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const emoji = e.target.getAttribute('data-emoji');
-                reactionPicker.classList.add('hidden');
+                if(reactionPicker) reactionPicker.style.display = 'none'; // সাথে সাথে হাইড হবে
                 
                 if (currentReactMsgId && roomId) {
                     await MessagesModule.reactToMessage(roomId, currentReactMsgId, emoji);
