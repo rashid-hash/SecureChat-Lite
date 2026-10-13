@@ -84,6 +84,20 @@ export const MessagesModule = {
         }
     },
 
+    async reactToMessage(roomId, messageId, emoji) {
+        const user = AuthModule.getCurrentUser();
+        if (!user) return;
+        const msgRef = doc(db, `rooms/${roomId}/messages`, messageId);
+        try {
+            // ইউজারের আইডি অনুযায়ী ইমোজি সেভ হবে
+            await setDoc(msgRef, {
+                [`reactions.${user.uid}`]: emoji
+            }, { merge: true });
+        } catch (error) {
+            console.error("Reaction Error:", error);
+        }
+    },
+
     listenForMessages(roomId, onNewMessage, onModify, onRemove) {
         this.currentRoomId = roomId;
         this.initObserver(roomId);
@@ -183,6 +197,19 @@ export const MessagesModule = {
             </div>`;
         }
 
+        // --- NEW: REACTION RENDER LOGIC ---
+        let reactionsHTML = '';
+        if (data.reactions && Object.keys(data.reactions).length > 0) {
+            const counts = {};
+            Object.values(data.reactions).forEach(e => counts[e] = (counts[e] || 0) + 1);
+            
+            const badges = Object.keys(counts).map(e => 
+                `<span class="inline-flex items-center justify-center bg-white dark:bg-slate-700 rounded-full px-1.5 py-[1px] text-[13px] shadow-sm border border-slate-200 dark:border-slate-600 ml-[-4px] first:ml-0">${e} <span class="text-[10px] font-bold text-slate-500 dark:text-slate-300 ml-0.5">${counts[e]>1 ? counts[e] : ''}</span></span>`
+            ).join('');
+            
+            reactionsHTML = `<div class="absolute -bottom-3.5 ${isSelf ? 'right-2' : 'left-2'} flex z-10 scale-95">${badges}</div>`;
+        }
+
         const msgTextSnippet = data.type === 'image' ? '📷 Photo' : (data.plaintext || '').substring(0, 50);
 
         wrapper.innerHTML = `
@@ -203,6 +230,7 @@ export const MessagesModule = {
                         
                         ${replyHTML}
                         ${contentHTML} 
+                        ${reactionsHTML}
                     </div>
 
                 </div>
@@ -267,6 +295,24 @@ export const MessagesModule = {
             if (bubble) this.observer.observe(bubble);
         }
     },
+
+    // --- LONG PRESS FOR REACTION (NEW) ---
+        if (bubbleEl) {
+            let pressTimer;
+            bubbleEl.addEventListener('touchstart', (e) => {
+                pressTimer = setTimeout(() => {
+                    if(window.showEmojiPicker) window.showEmojiPicker(roomId, id, e.touches[0].clientX, e.touches[0].clientY);
+                }, 400); // ৪০০ মিলি-সেকেন্ড চেপে ধরলে মেনু আসবে
+            }, { passive: true });
+
+            bubbleEl.addEventListener('touchend', () => clearTimeout(pressTimer));
+            bubbleEl.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
+            // পিসির জন্য ডাবল ক্লিক
+            bubbleEl.addEventListener('dblclick', (e) => {
+                if(window.showEmojiPicker) window.showEmojiPicker(roomId, id, e.clientX, e.clientY);
+            });
+        },
 
     updateMessageState(id, data, isPending, expiresMs) {
         const msgEl = document.getElementById(`msg-${id}`);
