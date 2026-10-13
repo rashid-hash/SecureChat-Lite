@@ -200,18 +200,19 @@ export const MessagesModule = {
         }
 
         // --- NEW: REACTION RENDER LOGIC ---
-        let reactionsHTML = '';
+        let badgeHTML = '';
         if (data.reactions && Object.keys(data.reactions).length > 0) {
             const counts = {};
             Object.values(data.reactions).forEach(e => counts[e] = (counts[e] || 0) + 1);
             
-            const badges = Object.keys(counts).map(e => 
+            badgeHTML = Object.keys(counts).map(e => 
                 `<span class="inline-flex items-center justify-center bg-white dark:bg-slate-700 rounded-full px-1.5 py-[1px] text-[13px] shadow-sm border border-slate-200 dark:border-slate-600 ml-[-4px] first:ml-0">${e} <span class="text-[10px] font-bold text-slate-500 dark:text-slate-300 ml-0.5">${counts[e]>1 ? counts[e] : ''}</span></span>`
             ).join('');
-            
-            reactionsHTML = `<div class="absolute -bottom-3.5 ${isSelf ? 'right-2' : 'left-2'} flex z-10 scale-95">${badges}</div>`;
         }
-
+        
+        // বক্সটি সব সময় থাকবে (ইমোজি থাকুক বা না থাকুক), শুধু ব্যাজগুলো আপডেট হবে
+        let reactionsHTML = `<div id="react-box-${id}" class="absolute -bottom-3.5 ${isSelf ? 'right-2' : 'left-2'} flex z-10 scale-95 transition-all duration-300">${badgeHTML}</div>`;
+    
         const msgTextSnippet = data.type === 'image' ? '📷 Photo' : (data.plaintext || '').substring(0, 50);
 
         wrapper.innerHTML = `
