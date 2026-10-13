@@ -726,14 +726,30 @@ class AppController {
             }
         });
 
-        // ইমোজিতে ক্লিক করলে ডেটাবেসে যাবে
+        // ইমোজিতে ক্লিক করলে ডেটাবেসে যাবে ও সাথে সাথে স্ক্রিনে দেখাবে
         document.querySelectorAll('.reaction-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const emoji = e.target.getAttribute('data-emoji');
-                if(reactionPicker) reactionPicker.style.display = 'none'; // সাথে সাথে হাইড হবে
+                if(reactionPicker) reactionPicker.style.display = 'none'; 
                 
                 if (currentReactMsgId && roomId) {
+                    // --- INSTANT UI UPDATE (ম্যাজিক ট্রিক) ---
+                    const msgBubble = document.querySelector(`#reply-data-${currentReactMsgId} .msg-bubble`);
+                    if (msgBubble) {
+                        let rxBox = msgBubble.querySelector('.reaction-box');
+                        // যদি আগে থেকে ইমোজি বক্স না থাকে, তবে নতুন তৈরি করবে
+                        if (!rxBox) {
+                            const isSelf = msgBubble.classList.contains('bg-emerald-600');
+                            msgBubble.insertAdjacentHTML('beforeend', `<div class="reaction-box absolute -bottom-3.5 ${isSelf ? 'right-2' : 'left-2'} flex z-10 scale-95"></div>`);
+                            rxBox = msgBubble.querySelector('.reaction-box');
+                        }
+                        // ইমোজি বসিয়ে দেওয়া হলো
+                        rxBox.innerHTML = `<span class="inline-flex items-center justify-center bg-white dark:bg-slate-700 rounded-full px-1.5 py-[1px] text-[13px] shadow-sm border border-slate-200 dark:border-slate-600">${emoji}</span>`;
+                    }
+                    
+                    // ব্যাকগ্রাউন্ডে ডেটাবেসে সেভ হবে
                     await MessagesModule.reactToMessage(roomId, currentReactMsgId, emoji);
+                    
                     if (typeof SoundModule !== 'undefined') {
                         SoundModule.playPopSound();
                         SoundModule.triggerHaptic(20);

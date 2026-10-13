@@ -89,9 +89,11 @@ export const MessagesModule = {
         if (!user) return;
         const msgRef = doc(db, `rooms/${roomId}/messages`, messageId);
         try {
-            // ইউজারের আইডি অনুযায়ী ইমোজি সেভ হবে
+            // ডেটাবেসে সঠিক Nested Object ফরম্যাটে ইমোজি সেভ করার লজিক
             await setDoc(msgRef, {
-                [`reactions.${user.uid}`]: emoji
+                reactions: {
+                    [user.uid]: emoji
+                }
             }, { merge: true });
         } catch (error) {
             console.error("Reaction Error:", error);
