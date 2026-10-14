@@ -217,6 +217,9 @@ export const MessagesModule = {
         let contentHTML = '';
         if (data.type === 'image') {
             contentHTML = `<img src="${data.plaintext}" class="rounded-xl max-w-full h-auto max-h-56 object-cover cursor-pointer hover:opacity-90 transition-opacity border border-slate-200 dark:border-slate-700/50" onclick="window.open(this.src, '_blank')">`;
+        } else if (data.type === 'audio') {
+            // Audio Player Render
+            contentHTML = `<audio controls src="${data.plaintext}" class="h-10 w-48 sm:w-60 outline-none rounded-full"></audio>`;
         } else {
             contentHTML = this.escapeHTML(data.plaintext);
         }
@@ -251,7 +254,7 @@ export const MessagesModule = {
         
         let reactionsHTML = `<div id="react-box-${id}" class="absolute -bottom-3.5 ${isSelf ? 'right-2' : 'left-2'} flex z-10 scale-95 transition-all duration-300">${badgeHTML}</div>`;
 
-        const msgTextSnippet = data.type === 'image' ? '📷 Photo' : (data.plaintext || '').substring(0, 50);
+        const msgTextSnippet = data.type === 'image' ? '📷 Photo' : (data.type === 'audio' ? '🎤 Voice Note' : (data.plaintext || '').substring(0, 50));
 
         wrapper.innerHTML = `
             <div class="max-w-[85%] sm:max-w-[70%] flex flex-col ${isSelf ? 'items-end' : 'items-start'} relative">

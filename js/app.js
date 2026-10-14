@@ -530,7 +530,7 @@ class AppController {
                         document.getElementById('btn-close-edit').click(); // এডিট বক্স ক্লোজ
                         return; // এখানেই থেমে যাবে
                     }
-                    
+
                     if (overrideId) document.getElementById(`msg-${overrideId}`)?.remove();
                     
                     const replyId = window.currentReplyToId; // রিপ্লাই আইডি নেওয়া হলো
@@ -615,6 +615,75 @@ class AppController {
                     reader.readAsDataURL(file);
                 });
             }
+
+            // --- VOICE RECORDING LOGIC ---
+        const btnMic = document.getElementById('btn-mic');
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        if (btnMic) {
+            const startRecording = async () => {
+                if (isRecording) return;
+                try {
+                    // Browser theke Microphone access neya
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = e => {
+                        if (e.data.size > 0) audioChunks.push(e.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        
+                        // Blob ke Base64 e convert kora
+                        reader.readAsDataURL(audioBlob);
+                        reader.onloadend = () => {
+                            const base64Audio = reader.result;
+                            // Encrypt kore Send kora (type: 'audio')
+                            handleSend(base64Audio, null, 'audio');
+                        };
+                        
+                        // Recording sesh hole microphone bondho kora
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    
+                    // Button er rong laal (Red) hobe ebang haptic hobe
+                    btnMic.classList.add('text-red-500', 'animate-pulse');
+                    btnMic.classList.remove('text-slate-400');
+                    if (typeof SoundModule !== 'undefined') SoundModule.triggerHaptic(50);
+                    
+                } catch (err) {
+                    console.error("Mic access denied or error:", err);
+                    CustomUI.alert("Error", "Microphone access denied. Please allow mic permission.", "error");
+                }
+            };
+
+            const stopRecording = () => {
+                if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                    isRecording = false;
+                    btnMic.classList.remove('text-red-500', 'animate-pulse');
+                    btnMic.classList.add('text-slate-400');
+                }
+            };
+
+            // Mobile er jonno (Touch Hold)
+            btnMic.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); }, { passive: false });
+            btnMic.addEventListener('touchend', (e) => { e.preventDefault(); stopRecording(); });
+            btnMic.addEventListener('touchcancel', (e) => { e.preventDefault(); stopRecording(); });
+
+            // PC / Laptop er jonno (Mouse Click Hold)
+            btnMic.addEventListener('mousedown', startRecording);
+            window.addEventListener('mouseup', stopRecording);
+        }
+
 
             chatForm.addEventListener('submit', (e) => {
                 e.preventDefault();
