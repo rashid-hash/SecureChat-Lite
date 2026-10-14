@@ -89,9 +89,11 @@ export const MessagesModule = {
         if (!user) return;
         const msgRef = doc(db, `rooms/${roomId}/messages`, messageId);
         try {
-            // ইউজারের আইডি অনুযায়ী ইমোজি সেভ হবে
+            // Firebase-e thikvabe map/object er vitore merge korar ashol niyom
             await setDoc(msgRef, {
-                [`reactions.${user.uid}`]: emoji
+                reactions: {
+                    [user.uid]: emoji
+                }
             }, { merge: true });
         } catch (error) {
             console.error("Reaction Error:", error);
@@ -126,15 +128,22 @@ export const MessagesModule = {
                     const data = change.doc.data();
                     const msgId = change.doc.id;
 
-                    // --- REAL-TIME REACTION SYNC ---
+                    // --- REAL-TIME REACTION SYNC (FIXED) ---
                     const rxBox = document.getElementById(`react-box-${msgId}`);
-                    if (rxBox && data.reactions) {
-                        const counts = {};
-                        Object.values(data.reactions).forEach(e => counts[e] = (counts[e] || 0) + 1);
-                        rxBox.innerHTML = Object.keys(counts).map(e =>
-                            `<span class="inline-flex items-center justify-center bg-white dark:bg-slate-700 rounded-full px-1.5 py-[1px] text-[13px] shadow-sm border border-slate-200 dark:border-slate-600 ml-[-4px] first:ml-0">${e} <span class="text-[10px] font-bold text-slate-500 dark:text-slate-300 ml-0.5">${counts[e] > 1 ? counts[e] : ''}</span></span>`
-                        ).join('');
+                    if (rxBox) {
+                        if (data.reactions && Object.keys(data.reactions).length > 0) {
+                            const counts = {};
+                            Object.values(data.reactions).forEach(e => counts[e] = (counts[e] || 0) + 1);
+                            rxBox.innerHTML = Object.keys(counts).map(e =>
+                                `<span class="inline-flex items-center justify-center bg-white dark:bg-slate-700 rounded-full px-1.5 py-[1px] text-[13px] shadow-sm border border-slate-200 dark:border-slate-600 ml-[-4px] first:ml-0">${e} <span class="text-[10px] font-bold text-slate-500 dark:text-slate-300 ml-0.5">${counts[e] > 1 ? counts[e] : ''}</span></span>`
+                            ).join('');
+                        } else {
+                            // Emoji na thakle box faka kore dibe
+                            rxBox.innerHTML = '';
+                        }
                     }
+                    // -------------------------------
+                    
                     onModify(change.doc.id, data, change.doc.metadata.hasPendingWrites, expiresMs);
                 }
 
