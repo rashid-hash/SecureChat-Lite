@@ -1,5 +1,5 @@
 // js/messages.js
-import { db, doc, collection, setDoc, updateDoc, onSnapshot, query, orderBy, arrayUnion } from './firebase.js';
+import { db, doc, collection, setDoc, updateDoc, onSnapshot, query, orderBy, arrayUnion, deleteDoc } from './firebase.js';
 import { AuthModule } from './auth.js';
 import { Security } from './security.js';
 
@@ -98,6 +98,31 @@ export const MessagesModule = {
         } catch (error) {
             console.error("Reaction Error:", error);
         }
+    },
+
+    async deleteMessage(roomId, messageId) {
+        const user = AuthModule.getCurrentUser();
+        if (!user) return;
+        const msgRef = doc(db, `rooms/${roomId}/messages`, messageId);
+        try {
+            // সবার ডিভাইস থেকে মেসেজ মুছে ফেলার ফায়ারবেস ট্রিক
+            await deleteDoc(msgRef);
+        } catch (error) { console.error("Delete Error:", error); }
+    },
+
+    async editMessage(roomId, messageId, newText) {
+        const user = AuthModule.getCurrentUser();
+        if (!user) return;
+        const msgRef = doc(db, `rooms/${roomId}/messages`, messageId);
+        try {
+            // নতুন মেসেজ আবার এন্ড-টু-এন্ড এনক্রিপ্ট হচ্ছে
+            const { ciphertext, iv } = await Security.encryptText(newText.trim(), this.sharedKey, user.uid);
+            await setDoc(msgRef, {
+                ciphertext: ciphertext,
+                iv: iv,
+                isEdited: true // এডিট করা হয়েছে তার ট্যাগ
+            }, { merge: true });
+        } catch (error) { console.error("Edit Error:", error); }
     },
 
     listenForMessages(roomId, onNewMessage, onModify, onRemove) {

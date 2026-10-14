@@ -524,6 +524,13 @@ class AppController {
                 if (msgType === "text" && textToSubmit.length > 2000) return;
                 
                 try {
+                    // যদি এডিট মোডে থাকে, তবে এডিট হবে (নতুন মেসেজ সেন্ড হবে না)
+                    if (window.currentEditMsgId) {
+                        await MessagesModule.editMessage(roomId, window.currentEditMsgId, textToSubmit);
+                        document.getElementById('btn-close-edit').click(); // এডিট বক্স ক্লোজ
+                        return; // এখানেই থেমে যাবে
+                    }
+                    
                     if (overrideId) document.getElementById(`msg-${overrideId}`)?.remove();
                     
                     const replyId = window.currentReplyToId; // রিপ্লাই আইডি নেওয়া হলো
@@ -617,6 +624,43 @@ class AppController {
                 messageInput.focus();
                 handleSend(text);
             });
+            // --- DELETE MESSAGE ---
+        document.getElementById('btn-delete-msg')?.addEventListener('click', async () => {
+            if (reactionPicker) reactionPicker.style.display = 'none';
+            if (!currentReactMsgId) return;
+            
+            // কনফার্মেশন নিয়ে ডিলিট করা
+            if (window.confirm("Delete this message for everyone?")) {
+                await MessagesModule.deleteMessage(roomId, currentReactMsgId);
+                // ফায়ারবেস অটোমেটিক সবার স্ক্রিন থেকে রিমুভ করে দেবে!
+                if (typeof SoundModule !== 'undefined') SoundModule.triggerHaptic(30);
+            }
+        });
+
+        // --- EDIT MESSAGE (Preview On) ---
+        window.currentEditMsgId = null;
+        
+        document.getElementById('btn-edit-msg')?.addEventListener('click', () => {
+            if (reactionPicker) reactionPicker.style.display = 'none';
+            if (!currentReactMsgId) return;
+
+            const msgText = document.querySelector(`#reply-data-${currentReactMsgId}`)?.getAttribute('data-text');
+            if(msgText === '📷 Photo') return; // ছবি এডিট করা যাবে না
+            
+            window.currentEditMsgId = currentReactMsgId;
+            document.getElementById('edit-preview-text').textContent = msgText;
+            document.getElementById('edit-preview').classList.remove('hidden');
+            
+            const msgInput = document.getElementById('message-input');
+            msgInput.value = msgText; // আগের মেসেজ বক্সে নিয়ে আসা হলো
+            msgInput.focus();
+        });
+        
+        document.getElementById('btn-close-edit')?.addEventListener('click', () => {
+            window.currentEditMsgId = null;
+            document.getElementById('edit-preview').classList.add('hidden');
+            document.getElementById('message-input').value = '';
+        });
 
             const btnCopyLink = document.getElementById('btn-copy-link');
             if (btnCopyLink) {
@@ -675,7 +719,13 @@ class AppController {
             currentReactMsgId = mId;
             
             // সরাসরি CSS দিয়ে শো করানো হলো
-            reactionPicker.style.display = 'flex'; 
+            reactionPicker.style.display = 'flex';
+
+            // শুধু নিজের মেসেজেই এডিট বা ডিলিট অপশন দেখাবে
+            const isSelf = document.querySelector(`#reply-data-${mId} .msg-bubble`)?.classList.contains('bg-emerald-600');
+            document.getElementById('action-divider').style.display = isSelf ? 'block' : 'none';
+            document.getElementById('btn-edit-msg').style.display = isSelf ? 'block' : 'none';
+            document.getElementById('btn-delete-msg').style.display = isSelf ? 'block' : 'none';
             
             const pickerWidth = 240; 
             let leftPos = x - (pickerWidth / 2);

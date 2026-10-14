@@ -115,6 +115,16 @@
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
                     </div>
+                    <!-- Edit Preview Box -->
+                    <div id="edit-preview" class="hidden w-full px-3 py-2 bg-amber-100/60 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800 flex items-center justify-between rounded-t-2xl transition-all">
+                        <div class="flex flex-col overflow-hidden border-l-4 border-amber-500 pl-2">
+                            <span class="text-xs font-bold text-amber-600 dark:text-amber-500">Editing Message</span>
+                            <span id="edit-preview-text" class="text-[13px] text-slate-700 dark:text-slate-300 truncate max-w-[200px]">Text</span>
+                        </div>
+                        <button type="button" id="btn-close-edit" class="text-slate-500 hover:text-red-500 p-1 rounded-full active:scale-90 transition-transform">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
                     <textarea id="message-input" rows="1" class="w-full bg-transparent resize-none border-none focus:ring-0 py-4 pr-4 text-[15px] max-h-28 custom-scrollbar text-slate-900 dark:text-white placeholder-slate-400" placeholder="Message..." required></textarea>
                 </div>
                 
@@ -152,14 +162,26 @@
     </div>
     <script type="module" src="js/app.js"></script>
 
-    <!-- Emoji Reaction Picker (Master Fix) -->
-    <div id="reaction-picker" style="display: none;" class="fixed z-[9999] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md shadow-2xl rounded-full px-3 py-2 flex items-center gap-3 border border-slate-200 dark:border-slate-700 transition-all">
-        <button class="reaction-btn text-[22px] hover:scale-125 transition-transform origin-bottom" data-emoji="👍">👍</button>
-        <button class="reaction-btn text-[22px] hover:scale-125 transition-transform origin-bottom" data-emoji="❤️">❤️</button>
-        <button class="reaction-btn text-[22px] hover:scale-125 transition-transform origin-bottom" data-emoji="😂">😂</button>
-        <button class="reaction-btn text-[22px] hover:scale-125 transition-transform origin-bottom" data-emoji="😮">😮</button>
-        <button class="reaction-btn text-[22px] hover:scale-125 transition-transform origin-bottom" data-emoji="😢">😢</button>
-        <button class="reaction-btn text-[22px] hover:scale-125 transition-transform origin-bottom" data-emoji="🙏">🙏</button>
+    <!-- Reaction, Edit & Delete Menu -->
+    <div id="reaction-picker" style="display: none;" class="fixed z-[9999] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md shadow-2xl rounded-full px-3 py-2 flex items-center gap-2 border border-slate-200 dark:border-slate-700 transition-all">
+        
+        <div class="flex gap-3">
+            <button class="reaction-btn text-[22px] hover:scale-125 transition-transform origin-bottom" data-emoji="👍">👍</button>
+            <button class="reaction-btn text-[22px] hover:scale-125 transition-transform origin-bottom" data-emoji="❤️">❤️</button>
+            <button class="reaction-btn text-[22px] hover:scale-125 transition-transform origin-bottom" data-emoji="😂">😂</button>
+            <button class="reaction-btn text-[22px] hover:scale-125 transition-transform origin-bottom" data-emoji="😮">😮</button>
+        </div>
+        
+        <!-- Divider (নিজের মেসেজ হলে শো করবে) -->
+        <div id="action-divider" style="display: none;" class="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+        
+        <!-- Action Buttons -->
+        <button id="btn-edit-msg" style="display: none;" class="p-1.5 text-slate-500 hover:text-emerald-500 transition-colors" title="Edit Message">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+        </button>
+        <button id="btn-delete-msg" style="display: none;" class="p-1.5 text-slate-500 hover:text-red-500 transition-colors" title="Delete for Everyone">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </button>
     </div>
 </body>
 </html>
