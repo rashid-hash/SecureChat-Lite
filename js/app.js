@@ -740,11 +740,8 @@ class AppController {
                         rxBox.classList.add('animate-bounce'); // ছোট্ট একটি লাফ দেওয়ার অ্যানিমেশন
                         setTimeout(() => rxBox.classList.remove('animate-bounce'), 500);
                     }
-                        // ইমোজি বসিয়ে দেওয়া হলো
-                        rxBox.innerHTML = `<span class="inline-flex items-center justify-center bg-white dark:bg-slate-700 rounded-full px-1.5 py-[1px] text-[13px] shadow-sm border border-slate-200 dark:border-slate-600">${emoji}</span>`;
-                    }
+                    // ------------------------------------------
 
-                    // ব্যাকগ্রাউন্ডে ডেটাবেসে সেভ হবে
                     await MessagesModule.reactToMessage(roomId, currentReactMsgId, emoji);
                     
                     if (typeof SoundModule !== 'undefined') {

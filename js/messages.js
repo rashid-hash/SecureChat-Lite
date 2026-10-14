@@ -89,11 +89,9 @@ export const MessagesModule = {
         if (!user) return;
         const msgRef = doc(db, `rooms/${roomId}/messages`, messageId);
         try {
-            // ডেটাবেসে সঠিক Nested Object ফরম্যাটে ইমোজি সেভ করার লজিক
+            // ইউজারের আইডি অনুযায়ী ইমোজি সেভ হবে
             await setDoc(msgRef, {
-                reactions: {
-                    [user.uid]: emoji
-                }
+                [`reactions.${user.uid}`]: emoji
             }, { merge: true });
         } catch (error) {
             console.error("Reaction Error:", error);
@@ -118,15 +116,28 @@ export const MessagesModule = {
                 }
 
                 if (change.type === "added") {
-                    if (expiresMs <= Date.now()) continue; 
+                    if (expiresMs <= Date.now()) continue;
                     let plaintext = await Security.decryptText(data.ciphertext, data.iv, this.sharedKey, data.senderId);
-                    data.plaintext = plaintext; 
+                    data.plaintext = plaintext;
                     onNewMessage(change.doc.id, data, change.doc.metadata.hasPendingWrites, expiresMs);
                 }
+
                 if (change.type === "modified") {
-                    // মডিফাই হলে নতুন expiresMs পাঠিয়ে দেওয়া হবে (যাতে ৫ সেকেন্ডের টাইমার UI তে শুরু হয়)
-                    onModify(change.doc.id, data, change.doc.metadata.hasPendingWrites, expiresMs); 
+                    const data = change.doc.data();
+                    const msgId = change.doc.id;
+
+                    // --- REAL-TIME REACTION SYNC ---
+                    const rxBox = document.getElementById(`react-box-${msgId}`);
+                    if (rxBox && data.reactions) {
+                        const counts = {};
+                        Object.values(data.reactions).forEach(e => counts[e] = (counts[e] || 0) + 1);
+                        rxBox.innerHTML = Object.keys(counts).map(e =>
+                            `<span class="inline-flex items-center justify-center bg-white dark:bg-slate-700 rounded-full px-1.5 py-[1px] text-[13px] shadow-sm border border-slate-200 dark:border-slate-600 ml-[-4px] first:ml-0">${e} <span class="text-[10px] font-bold text-slate-500 dark:text-slate-300 ml-0.5">${counts[e] > 1 ? counts[e] : ''}</span></span>`
+                        ).join('');
+                    }
+                    onModify(change.doc.id, data, change.doc.metadata.hasPendingWrites, expiresMs);
                 }
+
                 if (change.type === "removed") {
                     onRemove(change.doc.id);
                 }
@@ -162,7 +173,6 @@ export const MessagesModule = {
             if (seenNames) seenHTML = `👁️ Seen by: ${seenNames}`;
         }
 
-        // Burn Mode ব্যাজ
         const burnBadge = data.isBurnOnRead ? `
             <span class="absolute -top-3 ${isSelf ? 'right-0' : 'left-0'} bg-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm animate-pulse flex items-center gap-1 z-10 border border-white dark:border-slate-800">
                 <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"></path></svg>
@@ -172,17 +182,13 @@ export const MessagesModule = {
 
         let contentHTML = '';
         if (data.type === 'image') {
-            // যদি ছবি হয়, তাহলে Base64 দিয়ে <img> ট্যাগ রেন্ডার করবে
             contentHTML = `<img src="${data.plaintext}" class="rounded-xl max-w-full h-auto max-h-56 object-cover cursor-pointer hover:opacity-90 transition-opacity border border-slate-200 dark:border-slate-700/50" onclick="window.open(this.src, '_blank')">`;
         } else {
-            // সাধারণ টেক্সট হলে আগের মতোই থাকবে
             contentHTML = this.escapeHTML(data.plaintext);
         }
 
-        // --- NEW: QUOTED REPLY RENDER LOGIC ---
         let replyHTML = '';
         if (data.replyToId) {
-            // এখন সে সঠিক আইডি (reply-data-) খুঁজবে
             const repliedEl = document.getElementById(`reply-data-${data.replyToId}`);
             let repliedName = "Someone";
             let repliedText = "Message expired or deleted";
@@ -199,7 +205,6 @@ export const MessagesModule = {
             </div>`;
         }
 
-        // --- NEW: REACTION RENDER LOGIC ---
         let badgeHTML = '';
         if (data.reactions && Object.keys(data.reactions).length > 0) {
             const counts = {};
@@ -210,9 +215,8 @@ export const MessagesModule = {
             ).join('');
         }
         
-        // বক্সটি সব সময় থাকবে (ইমোজি থাকুক বা না থাকুক), শুধু ব্যাজগুলো আপডেট হবে
         let reactionsHTML = `<div id="react-box-${id}" class="absolute -bottom-3.5 ${isSelf ? 'right-2' : 'left-2'} flex z-10 scale-95 transition-all duration-300">${badgeHTML}</div>`;
-    
+
         const msgTextSnippet = data.type === 'image' ? '📷 Photo' : (data.plaintext || '').substring(0, 50);
 
         wrapper.innerHTML = `
@@ -221,7 +225,6 @@ export const MessagesModule = {
                 
                 ${burnBadge}
                 
-                <!-- Swipe to Reply Container (ID FIXED) -->
                 <div id="reply-data-${id}" class="w-full flex flex-col ${isSelf ? 'items-end' : 'items-start'}" data-name="${data.senderNickname}" data-text="${this.escapeHTML(msgTextSnippet)}">
                     
                     <div class="msg-bubble relative px-4 py-2.5 shadow-sm text-[15px] leading-relaxed break-words
@@ -235,7 +238,6 @@ export const MessagesModule = {
                         ${contentHTML} 
                         ${reactionsHTML}
                     </div>
-
                 </div>
                 
                 <div class="flex flex-col items-${isSelf ? 'end' : 'start'} mt-1 px-1 min-h-[16px]">
@@ -250,7 +252,6 @@ export const MessagesModule = {
         
         container.appendChild(wrapper);
 
-        // --- SWIPE TO REPLY TOUCH TRACKING (ID FIXED) ---
         const msgContainer = wrapper.querySelector(`#reply-data-${id}`);
         const bubbleEl = wrapper.querySelector('.msg-bubble');
         
