@@ -90,65 +90,82 @@
         <div id="typing-indicator-container" class="px-4 py-1.5 min-h-[30px] bg-slate-50 dark:bg-[#0b1121] shrink-0 border-t border-transparent z-10 flex flex-col justify-end"></div>
 
         <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 pb-[env(safe-area-inset-bottom)] z-20">
-            <form id="chat-form" class="flex items-end gap-2 px-3 py-3">
-                <div class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-end relative border border-transparent focus-within:border-emerald-500/50 transition-colors shadow-inner">
-                    
-                    <!-- Hidden File Input for Image -->
-                    <input type="file" id="input-image" accept="image/jpeg, image/png, image/webp" class="hidden">
-                    
-                    <!-- Hidden File Input for Documents (NEW) -->
-                    <input type="file" id="input-file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar" class="hidden">
-
-                    <!-- Attach Image Button -->
-                    <button type="button" id="btn-attach" class="p-3.5 text-slate-400 hover:text-emerald-500 shrink-0 active:scale-95 transition-transform" title="Send Secure Image">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                    </button>
-
-                    <!-- Attach Document Button (NEW) -->
-                    <button type="button" id="btn-file" class="p-3.5 -ml-2 text-slate-400 hover:text-blue-500 shrink-0 active:scale-95 transition-transform" title="Send Secure Document">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    </button>
-
-                    <button type="button" id="btn-emoji" class="p-3.5 -ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 shrink-0 active:scale-95 transition-transform">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    </button>
-
-                    <!-- Burn Mode Button -->
-                    <button type="button" id="btn-burn-toggle" class="p-3.5 -ml-2 text-slate-400 hover:text-orange-500 shrink-0 active:scale-95 transition-colors rounded-full" title="Burn on Read">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path></svg>
-                    </button>
-
-                    <!-- Mic Button -->
-                    <button type="button" id="btn-mic" class="p-3.5 -ml-2 text-slate-400 hover:text-red-500 shrink-0 active:scale-95 transition-colors rounded-full" title="Hold to Record Voice">
-                        <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                    </button>
-
-                    <!-- Reply Preview Box (Hidden by default) -->
-                    <div id="reply-preview" class="hidden w-full px-3 py-2 bg-slate-200/60 dark:bg-slate-700/60 border-b border-slate-300 dark:border-slate-600 flex items-center justify-between rounded-t-2xl transition-all">
-                        <div class="flex flex-col overflow-hidden border-l-4 border-emerald-500 pl-2">
-                            <span id="reply-preview-name" class="text-xs font-bold text-emerald-600 dark:text-emerald-400">Name</span>
-                            <span id="reply-preview-text" class="text-[13px] text-slate-700 dark:text-slate-300 truncate max-w-[200px]">Text</span>
-                        </div>
-                        <button type="button" id="btn-close-reply" class="text-slate-500 hover:text-red-500 p-1 rounded-full active:scale-90 transition-transform">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
-                    </div>
-                    <!-- Edit Preview Box -->
-                    <div id="edit-preview" class="hidden w-full px-3 py-2 bg-amber-100/60 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800 flex items-center justify-between rounded-t-2xl transition-all">
-                        <div class="flex flex-col overflow-hidden border-l-4 border-amber-500 pl-2">
-                            <span class="text-xs font-bold text-amber-600 dark:text-amber-500">Editing Message</span>
-                            <span id="edit-preview-text" class="text-[13px] text-slate-700 dark:text-slate-300 truncate max-w-[200px]">Text</span>
-                        </div>
-                        <button type="button" id="btn-close-edit" class="text-slate-500 hover:text-red-500 p-1 rounded-full active:scale-90 transition-transform">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
-                    </div>
-                    <textarea id="message-input" rows="1" class="w-full bg-transparent resize-none border-none focus:ring-0 py-4 pr-4 text-[15px] max-h-28 custom-scrollbar text-slate-900 dark:text-white placeholder-slate-400" placeholder="Message..." required></textarea>
-                </div>
+            <!-- Chat Input Form (Pro Layout) -->
+            <form id="chat-form" class="relative flex flex-col p-2 sm:p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 z-40">
                 
-                <button type="submit" id="btn-send" class="p-4 rounded-full bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-all shrink-0 mb-0.5 active:scale-95 shadow-md">
-                    <svg class="w-5 h-5 transform rotate-90 translate-x-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
-                </button>
+                <!-- Edit Preview Box (আগের মতোই থাকবে) -->
+                <div id="edit-preview" class="hidden w-full px-3 py-2 bg-amber-100/60 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800 flex items-center justify-between rounded-t-2xl transition-all mb-2">
+                    <div class="flex flex-col overflow-hidden border-l-4 border-amber-500 pl-2">
+                        <span class="text-xs font-bold text-amber-600 dark:text-amber-500">Editing Message</span>
+                        <span id="edit-preview-text" class="text-[13px] text-slate-700 dark:text-slate-300 truncate max-w-[200px]">Text</span>
+                    </div>
+                    <button type="button" id="btn-close-edit" class="text-slate-500 hover:text-red-500 p-1 rounded-full active:scale-90 transition-transform">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
+                <!-- Hidden File Inputs -->
+                <input type="file" id="input-image" accept="image/jpeg, image/png, image/webp" class="hidden">
+                <input type="file" id="input-file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar" class="hidden">
+
+                <!-- Attachment Menu (Hidden by default) -->
+                <div id="attachment-menu" style="display: none;" class="absolute bottom-16 left-12 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md shadow-2xl border border-slate-200 dark:border-slate-700 rounded-2xl p-2 flex flex-col w-52 z-50 transition-all origin-bottom-left">
+                    
+                    <!-- Attach Image -->
+                    <button type="button" id="btn-attach" class="flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-slate-700 dark:text-white transition-colors">
+                        <div class="bg-blue-100 dark:bg-blue-500/20 text-blue-500 p-1.5 rounded-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <span class="font-medium text-[15px]">Photo / Video</span>
+                    </button>
+                    
+                    <!-- Attach Document -->
+                    <button type="button" id="btn-file" class="flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-slate-700 dark:text-white transition-colors">
+                        <div class="bg-purple-100 dark:bg-purple-500/20 text-purple-500 p-1.5 rounded-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        </div>
+                        <span class="font-medium text-[15px]">Document</span>
+                    </button>
+                    
+                    <!-- Burn Mode Toggle -->
+                    <button type="button" id="btn-burn-toggle" class="flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-slate-700 dark:text-white transition-colors">
+                        <div class="bg-orange-100 dark:bg-orange-500/20 text-orange-500 p-1.5 rounded-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path></svg>
+                        </div>
+                        <span class="font-medium text-[15px]">View Once Mode</span>
+                    </button>
+                </div>
+
+                <!-- Input Bar Container -->
+                <div class="flex items-end gap-2 w-full">
+                    
+                    <!-- Rounded Chat Box -->
+                    <div class="flex-1 flex items-center bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-[24px] px-1 min-h-[48px]">
+                        
+                        <!-- Emoji Button -->
+                        <button type="button" id="btn-emoji" class="p-2 text-slate-400 hover:text-emerald-500 shrink-0 transition-colors" title="Emojis">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </button>
+
+                        <!-- Plus (+) Button -->
+                        <button type="button" id="btn-plus-menu" class="p-2 text-slate-400 hover:text-blue-500 shrink-0 transition-transform duration-200" title="Attachments">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        </button>
+
+                        <!-- Text Input -->
+                        <textarea id="message-input" rows="1" class="flex-1 bg-transparent px-2 py-3 outline-none text-slate-800 dark:text-white placeholder-slate-400 resize-none max-h-32 text-[15px]" placeholder="Message..."></textarea>
+                        
+                        <!-- Mic Button -->
+                        <button type="button" id="btn-mic" class="p-2.5 text-slate-400 hover:text-red-500 shrink-0 transition-colors" title="Hold to Record">
+                            <svg class="w-6 h-6 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- Send Button -->
+                    <button type="submit" id="btn-send" class="w-12 h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20 transition-transform active:scale-90" disabled>
+                        <svg class="w-5 h-5 ml-1" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
+                    </button>
+                </div>
             </form>
         </footer>
 

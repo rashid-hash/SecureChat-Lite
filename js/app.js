@@ -922,7 +922,38 @@ class AppController {
             await CustomUI.alert("Security Error", error.message, "error");
         }
     }
+    
 }
+// --- ATTACHMENT (+) MENU LOGIC ---
+        const btnPlus = document.getElementById('btn-plus-menu');
+        const attachMenu = document.getElementById('attachment-menu');
+        
+        if (btnPlus && attachMenu) {
+            // প্লাস বাটনে ক্লিক করলে মেনু খুলবে বা বন্ধ হবে
+            btnPlus.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isHidden = attachMenu.style.display === 'none';
+                attachMenu.style.display = isHidden ? 'flex' : 'none';
+                
+                // বাটনটি একটু ঘুরে ক্রস (X) চিহ্নের মতো হয়ে যাবে
+                btnPlus.style.transform = isHidden ? 'rotate(45deg)' : 'rotate(0deg)';
+                if (typeof SoundModule !== 'undefined') SoundModule.triggerHaptic(10);
+            });
+
+            // স্ক্রিনের বাইরে কোথাও ক্লিক করলে মেনু অটোমেটিক বন্ধ হয়ে যাবে
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#attachment-menu') && !e.target.closest('#btn-plus-menu')) {
+                    attachMenu.style.display = 'none';
+                    btnPlus.style.transform = 'rotate(0deg)';
+                }
+            });
+            
+            // মেনু থেকে কোনো অপশন সিলেক্ট করার সাথে সাথেই মেনু বন্ধ হয়ে যাবে
+            attachMenu.addEventListener('click', () => {
+                attachMenu.style.display = 'none';
+                btnPlus.style.transform = 'rotate(0deg)';
+            });
+        }
 
 // ==========================================
         // --- BANK-LEVEL BIOMETRIC APP LOCK ---
