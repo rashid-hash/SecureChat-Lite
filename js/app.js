@@ -955,6 +955,63 @@ class AppController {
             });
         }
 
+        // --- CUSTOM EMOJI KEYBOARD LOGIC ---
+        const btnEmoji = document.getElementById('btn-emoji');
+        const emojiMenu = document.getElementById('emoji-keyboard-menu');
+        
+        if (btnEmoji && emojiMenu) {
+            // ইমোজি বাটনে ক্লিক করলে মেনু খুলবে
+            btnEmoji.addEventListener('click', (e) => {
+                e.stopPropagation();
+                
+                // যদি (+) মেনু খোলা থাকে, সেটা বন্ধ করে দেবে
+                if (attachMenu && attachMenu.style.display === 'flex') {
+                    attachMenu.style.display = 'none';
+                    if (btnPlus) btnPlus.style.transform = 'rotate(0deg)';
+                }
+
+                const isHidden = emojiMenu.style.display === 'none';
+                emojiMenu.style.display = isHidden ? 'block' : 'none';
+                
+                // বাটনটি একটু হাইলাইট হবে
+                btnEmoji.style.color = isHidden ? '#10B981' : ''; 
+                if (typeof SoundModule !== 'undefined') SoundModule.triggerHaptic(10);
+            });
+
+            // ইমোজিতে ক্লিক করলে ইনপুটে অ্যাড হবে
+            document.querySelectorAll('.insert-emoji').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // মেনু খোলা থাকবে যেন কয়েকটা ইমোজি একসাথে দেওয়া যায়
+                    
+                    const emoji = e.target.innerText;
+                    const msgInput = document.getElementById('message-input');
+                    const sendBtn = document.getElementById('btn-send');
+                    
+                    // ইনপুট বক্সে ইমোজি অ্যাড করা
+                    msgInput.value += emoji;
+                    
+                    // Send বাটন অ্যাক্টিভ করা
+                    if (sendBtn) {
+                        sendBtn.disabled = false;
+                        sendBtn.classList.remove('opacity-50');
+                    }
+                    
+                    // ইনপুট বক্সে ফোকাস রাখা
+                    msgInput.focus();
+                    if (typeof SoundModule !== 'undefined') SoundModule.triggerHaptic(10);
+                });
+            });
+
+            // বাইরে ক্লিক করলে ইমোজি মেনু বন্ধ হয়ে যাবে
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#emoji-keyboard-menu') && !e.target.closest('#btn-emoji')) {
+                    emojiMenu.style.display = 'none';
+                    btnEmoji.style.color = ''; 
+                }
+            });
+        }
+        // ------------------------------------------
+
 // ==========================================
         // --- BANK-LEVEL BIOMETRIC APP LOCK ---
         // ==========================================
