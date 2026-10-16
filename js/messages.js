@@ -218,8 +218,24 @@ export const MessagesModule = {
         if (data.type === 'image') {
             contentHTML = `<img src="${data.plaintext}" class="rounded-xl max-w-full h-auto max-h-56 object-cover cursor-pointer hover:opacity-90 transition-opacity border border-slate-200 dark:border-slate-700/50" onclick="window.open(this.src, '_blank')">`;
         } else if (data.type === 'audio') {
-            // Audio Player Render
             contentHTML = `<audio controls src="${data.plaintext}" class="h-10 w-48 sm:w-60 outline-none rounded-full"></audio>`;
+        } else if (data.type === 'file') {
+            // Document / File Render (Download Card)
+            try {
+                const fileObj = JSON.parse(data.plaintext);
+                contentHTML = `
+                <a href="${fileObj.fileData}" download="${this.escapeHTML(fileObj.fileName)}" class="flex items-center gap-3 p-2 bg-black/10 dark:bg-white/10 rounded-lg hover:bg-black/20 dark:hover:bg-white/20 transition-colors no-underline w-48 sm:w-56 cursor-pointer border border-transparent hover:border-slate-300 dark:hover:border-slate-600">
+                    <div class="p-2 bg-blue-500 text-white rounded-md shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <div class="flex flex-col overflow-hidden">
+                        <span class="text-sm font-bold truncate ${isSelf ? 'text-white' : 'text-slate-800 dark:text-white'}">${this.escapeHTML(fileObj.fileName)}</span>
+                        <span class="text-[10px] opacity-75">${fileObj.fileSize}</span>
+                    </div>
+                </a>`;
+            } catch(e) {
+                contentHTML = this.escapeHTML(data.plaintext);
+            }
         } else {
             contentHTML = this.escapeHTML(data.plaintext);
         }
@@ -254,8 +270,8 @@ export const MessagesModule = {
         
         let reactionsHTML = `<div id="react-box-${id}" class="absolute -bottom-3.5 ${isSelf ? 'right-2' : 'left-2'} flex z-10 scale-95 transition-all duration-300">${badgeHTML}</div>`;
 
-        const msgTextSnippet = data.type === 'image' ? '📷 Photo' : (data.type === 'audio' ? '🎤 Voice Note' : (data.plaintext || '').substring(0, 50));
-
+        const msgTextSnippet = data.type === 'image' ? '📷 Photo' : (data.type === 'audio' ? '🎤 Voice Note' : (data.type === 'file' ? '📄 Document' : (data.plaintext || '').substring(0, 50)));
+        
         wrapper.innerHTML = `
             <div class="max-w-[85%] sm:max-w-[70%] flex flex-col ${isSelf ? 'items-end' : 'items-start'} relative">
                 ${(!isSelf && showNickname) ? `<span class="text-[11px] font-medium text-slate-500 mb-1 ml-1">${data.senderNickname}</span>` : ''}

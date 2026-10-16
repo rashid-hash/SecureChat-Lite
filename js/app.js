@@ -693,6 +693,51 @@ class AppController {
                 messageInput.focus();
                 handleSend(text);
             });
+
+            // --- DOCUMENT & FILE SHARING LOGIC ---
+        const btnFile = document.getElementById('btn-file');
+        const inputFile = document.getElementById('input-file');
+
+        if (btnFile && inputFile) {
+            btnFile.addEventListener('click', () => inputFile.click());
+
+            inputFile.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Firebase Document Size limit is 1MB. (Base64 + Encryption er jonno max 700KB safe)
+                if (file.size > 700 * 1024) {
+                    CustomUI.alert("File Too Large", "For maximum E2E security and database limits, files must be under 700 KB.", "error");
+                    inputFile.value = '';
+                    return;
+                }
+
+                btnFile.style.opacity = '0.5';
+                btnFile.classList.add('animate-pulse');
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const base64Data = event.target.result;
+                    let sizeStr = (file.size / 1024).toFixed(1) + ' KB';
+                    
+                    // ফাইলের নাম, সাইজ এবং ডেটা একসাথে JSON করে এনক্রিপ্ট করার জন্য পাঠানো হচ্ছে
+                    const payload = JSON.stringify({
+                        fileName: file.name,
+                        fileSize: sizeStr,
+                        fileData: base64Data
+                    });
+
+                    // type 'file' হিসেবে ডেটাবেসে যাচ্ছে
+                    handleSend(payload, null, 'file');
+                    
+                    inputFile.value = '';
+                    btnFile.style.opacity = '1';
+                    btnFile.classList.remove('animate-pulse');
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
             // --- DELETE MESSAGE ---
         document.getElementById('btn-delete-msg')?.addEventListener('click', async () => {
             if (reactionPicker) reactionPicker.style.display = 'none';
@@ -878,5 +923,106 @@ class AppController {
         }
     }
 }
+
+// ==========================================
+        // --- BANK-LEVEL BIOMETRIC APP LOCK ---
+        // ==========================================
+        const BiometricLock = {
+            isLocked: false,
+            init() {
+                if (!window.PublicKeyCredential) return console.log("WebAuthn not supported");
+
+                // Background/Foreground Tracker (Minimize korle lock hobe)
+                document.addEventListener("visibilitychange", () => {
+                    if (document.visibilityState === 'hidden') {
+                        // App minimized -> Lock the screen if setup is done
+                        if (localStorage.getItem('appLockCredId')) this.showLockScreen();
+                    } else if (document.visibilityState === 'visible') {
+                        // App opened -> Prompt FaceID/Fingerprint if locked
+                        if (this.isLocked) setTimeout(() => this.verify(), 300);
+                    }
+                });
+
+                // Unlock Button Listener
+                document.getElementById('btn-unlock-app')?.addEventListener('click', () => this.verify());
+                
+                // Setup Lock Button Listener
+                document.getElementById('btn-setup-lock')?.addEventListener('click', () => this.setupLock());
+
+                // App prothom open korar somoy lock check kora
+                if (localStorage.getItem('appLockCredId')) {
+                    this.showLockScreen();
+                    setTimeout(() => this.verify(), 500);
+                }
+            },
+
+            showLockScreen() {
+                this.isLocked = true;
+                document.getElementById('app-lock-screen')?.classList.remove('hidden');
+            },
+
+            hideLockScreen() {
+                this.isLocked = false;
+                document.getElementById('app-lock-screen')?.classList.add('hidden');
+                if (typeof SoundModule !== 'undefined') SoundModule.triggerHaptic(30);
+            },
+
+            async setupLock() {
+                if(localStorage.getItem('appLockCredId')) {
+                    alert("App Lock is already enabled!"); return;
+                }
+                try {
+                    const challenge = new Uint8Array(32); crypto.getRandomValues(challenge);
+                    const userid = new Uint8Array(16); crypto.getRandomValues(userid);
+
+                    const createOptions = {
+                        challenge: challenge,
+                        rp: { name: "Secure Messenger", id: window.location.hostname },
+                        user: { id: userid, name: "app_user", displayName: "Secure User" },
+                        pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+                        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                        timeout: 60000
+                    };
+
+                    const cred = await navigator.credentials.create({ publicKey: createOptions });
+                    // Save Credential ID locally
+                    localStorage.setItem('appLockCredId', btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
+                    alert("Success! Biometric App Lock Enabled 🔒");
+                } catch (e) {
+                    console.error("Lock Setup Error:", e);
+                    alert("Setup Failed: Please make sure your device has a screen lock (FaceID/Fingerprint) enabled.");
+                }
+            },
+
+            async verify() {
+                try {
+                    const credId = localStorage.getItem('appLockCredId');
+                    if (!credId) return this.hideLockScreen();
+
+                    const challenge = new Uint8Array(32); crypto.getRandomValues(challenge);
+                    const rawId = Uint8Array.from(atob(credId), c => c.charCodeAt(0)).buffer;
+
+                    const requestOptions = {
+                        challenge: challenge,
+                        allowCredentials: [{ id: rawId, type: 'public-key', transports: ['internal'] }],
+                        userVerification: "required",
+                        timeout: 60000
+                    };
+
+                    // Trigger FaceID / Fingerprint Prompt
+                    await navigator.credentials.get({ publicKey: requestOptions });
+                    
+                    // Match successful - Unlock App
+                    this.hideLockScreen();
+                } catch (e) {
+                    console.error("Verification Error:", e);
+                    // Match failed or cancelled
+                }
+            }
+        };
+
+        // Initialize the lock system
+        BiometricLock.init();
+        // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => new AppController());

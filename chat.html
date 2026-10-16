@@ -67,6 +67,10 @@
             <button id="btn-open-settings" class="p-2 -mr-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
             </button>
+            <!-- App Lock Setup Button (Header-er vitor bosaben) -->
+            <button id="btn-setup-lock" class="p-2 text-slate-400 hover:text-emerald-500 transition-colors" title="Enable App Lock">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07"></path></svg>
+            </button>
         </header>
 
         <main id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar relative bg-slate-50 dark:bg-[#0b1121]">
@@ -92,9 +96,17 @@
                     <!-- Hidden File Input for Image -->
                     <input type="file" id="input-image" accept="image/jpeg, image/png, image/webp" class="hidden">
                     
+                    <!-- Hidden File Input for Documents (NEW) -->
+                    <input type="file" id="input-file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar" class="hidden">
+
                     <!-- Attach Image Button -->
                     <button type="button" id="btn-attach" class="p-3.5 text-slate-400 hover:text-emerald-500 shrink-0 active:scale-95 transition-transform" title="Send Secure Image">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                    </button>
+
+                    <!-- Attach Document Button (NEW) -->
+                    <button type="button" id="btn-file" class="p-3.5 -ml-2 text-slate-400 hover:text-blue-500 shrink-0 active:scale-95 transition-transform" title="Send Secure Document">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     </button>
 
                     <button type="button" id="btn-emoji" class="p-3.5 -ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 shrink-0 active:scale-95 transition-transform">
@@ -110,7 +122,7 @@
                     <button type="button" id="btn-mic" class="p-3.5 -ml-2 text-slate-400 hover:text-red-500 shrink-0 active:scale-95 transition-colors rounded-full" title="Hold to Record Voice">
                         <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                     </button>
-                    
+
                     <!-- Reply Preview Box (Hidden by default) -->
                     <div id="reply-preview" class="hidden w-full px-3 py-2 bg-slate-200/60 dark:bg-slate-700/60 border-b border-slate-300 dark:border-slate-600 flex items-center justify-between rounded-t-2xl transition-all">
                         <div class="flex flex-col overflow-hidden border-l-4 border-emerald-500 pl-2">
@@ -188,6 +200,22 @@
         <button id="btn-delete-msg" style="display: none;" class="p-1.5 text-slate-500 hover:text-red-500 transition-colors" title="Delete for Everyone">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
         </button>
+    </div>
+
+    <!-- Biometric Lock Screen Overlay -->
+    <div id="app-lock-screen" class="hidden fixed inset-0 z-[99999] bg-slate-900 flex flex-col items-center justify-center text-white backdrop-blur-xl">
+        <div class="bg-slate-800/50 p-8 rounded-3xl flex flex-col items-center border border-slate-700 shadow-2xl">
+            <!-- Fingerprint / FaceID Icon -->
+            <svg class="w-20 h-20 text-emerald-500 mb-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path></svg>
+            
+            <h2 class="text-2xl font-bold mb-2">App Locked</h2>
+            <p class="text-slate-400 mb-8 text-sm text-center px-4 max-w-[250px]">Use FaceID or Fingerprint to unlock your secure messages.</p>
+            
+            <button id="btn-unlock-app" class="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3 rounded-full font-bold shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-transform active:scale-95 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                Unlock Now
+            </button>
+        </div>
     </div>
 </body>
 </html>
